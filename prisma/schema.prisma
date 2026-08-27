@@ -1,0 +1,96 @@
+// ============================================================================
+// DATABASE CONFIGURATION AND SCHEMAS (PRISMA ORM)
+// ============================================================================
+// What this file does:
+// Defines the database connection settings and data models for the application.
+//
+// Why it is needed:
+// Prisma ORM uses this schema file to generate database migrations, set up
+// the SQLite database tables, and create type-safe database query methods.
+// ============================================================================
+
+// Generator block specifies that Prisma Client should be generated for TypeScript.
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Datasource block specifies SQLite as the database engine and points to a local file.
+// Storing data in SQLite ensures the app runs locally without external database setup.
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// ============================================================================
+// TEACHER ACCOUNT MODEL
+// ============================================================================
+// What this model does:
+// Represents registered school teachers in the system who can authenticate,
+// log in, access protected teacher pages, and manage reading assessments.
+//
+// Security Note:
+// The password field stores a cryptographically hashed string (via bcryptjs),
+// ensuring plain-text passwords are NEVER stored in the database.
+// ============================================================================
+model Teacher {
+  // Unique internal database ID generated automatically as a UUID string.
+  id            String   @id @default(uuid())
+
+  // Official school Teacher Identification Number (e.g. T-2026-001). Must be unique.
+  teacherId     String   @unique
+
+  // Full name of the teacher (e.g. Maria Santos).
+  fullName      String
+
+  // Email address used by the teacher to log into the web application. Must be unique.
+  email         String   @unique
+
+  // Cryptographically hashed password created during registration using bcryptjs.
+  passwordHash  String
+
+  // Timestamp recorded automatically when the teacher account is first created.
+  createdAt     DateTime @default(now())
+
+  // Timestamp updated automatically whenever the account record is modified.
+  updatedAt     DateTime @updatedAt
+
+  // Relation to password reset requests created for this teacher.
+  passwordResets PasswordReset[]
+}
+
+// ============================================================================
+// PASSWORD RESET REQUEST MODEL
+// ============================================================================
+// What this model does:
+// Stores temporary, secure password reset tokens issued when a teacher
+// requests a password reset link.
+//
+// Security Note:
+// Tokens are 64-character secure random strings with an expiration time.
+// Once consumed (used = 1) or expired, they cannot be reused.
+// ============================================================================
+model PasswordReset {
+  // Unique internal database ID.
+  id        String   @id @default(uuid())
+
+  // Foreign key pointing to the teacher account requesting the reset.
+  teacherId String
+
+  // Teacher email address for fast lookup.
+  email     String
+
+  // Secure 64-character random token string. Must be unique.
+  token     String   @unique
+
+  // Expiration timestamp string (1 hour from creation).
+  expiresAt String
+
+  // Usage flag: 0 = unused, 1 = consumed/used.
+  used      Int      @default(0)
+
+  // Creation timestamp.
+  createdAt DateTime @default(now())
+
+  // Relation to Teacher model.
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+}
