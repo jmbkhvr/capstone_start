@@ -1,11 +1,30 @@
 @import "tailwindcss";
 
 /* ============================================================================
-   GLOBAL STYLES & CUSTOM ANIMATION UTILITIES
-   ============================================================================
-   What this file does:
-   Imports Tailwind CSS v4 directives and defines keyframe animations for UI components.
+   GLOBAL STYLES, DUAL-THEME ENGINE TOKENS & ANIMATION UTILITIES
    ============================================================================ */
+
+:root {
+  --theme-bg-gradient: linear-gradient(135deg, #020617 0%, #0f172a 100%);
+  --theme-card-bg: rgba(15, 23, 42, 0.8);
+  --theme-text-primary: #f8fafc;
+  --theme-text-secondary: #94a3b8;
+  --theme-border: rgba(51, 65, 85, 0.6);
+  --theme-accent: #0d9488;
+}
+
+[data-theme="child"] {
+  --theme-bg-gradient: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 50%, #fef3c7 100%);
+  --theme-card-bg: rgba(255, 255, 255, 0.9);
+  --theme-text-primary: #0f172a;
+  --theme-text-secondary: #475569;
+  --theme-border: rgba(204, 251, 241, 0.9);
+  --theme-accent: #0d9488;
+}
+
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
 
 @keyframes fadeIn {
   from {
@@ -18,6 +37,19 @@
   }
 }
 
+@keyframes bounceSlow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
 .animate-fadeIn {
   animation: fadeIn 0.25s ease-out forwards;
+}
+
+.animate-bounceSlow {
+  animation: bounceSlow 3s ease-in-out infinite;
 }
