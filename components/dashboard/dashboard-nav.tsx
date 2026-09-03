@@ -89,9 +89,8 @@ export function DashboardNav({
       name: 'Parents',
       href: '/parents',
       icon: Users,
-      isImplemented: false,
-      moduleBadge: 'Module 9',
-      description: 'Parent-teacher communication, portal access, and reading updates.',
+      isImplemented: true,
+      description: 'Review and approve parent registration requests for Grade 3 pupils.',
     },
     {
       name: 'Classrooms',

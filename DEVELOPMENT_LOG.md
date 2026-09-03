@@ -413,7 +413,147 @@ Executed automated test suite (`test_password_reset.mjs`) covering all 8 passwor
 
 ### Ready for Next Module
 
-* **Module 3: Classroom Management Module** is next in sequence.
-* The Teacher Dashboard navigation and database hooks are already prepared to seamlessly receive classroom data when Module 3 is implemented.
+* **Module 3: Parent Management Module** was completed in Update 4 below.
+* The Teacher Dashboard navigation and database hooks are already prepared to seamlessly receive classroom data when Classroom Management is implemented.
+
+---
+
+## Update 4 - 7:25 PM September 3, 2026
+
+### Update Information
+
+* **Update Number**: Update 4
+* **Exact Time**: 7:25 PM
+* **Exact Date**: September 3, 2026
+* **What Was Worked On**:
+  Complete design, database schema additions, backend REST API routes, frontend UI implementation, search and status filtering, parent detail inspections, approval and rejection workflows with confirmation dialogs, and automated & visual verification of **Module 3: Parent Management Module**.
+* **Why It Was Done**:
+  To enable Grade 3 school teachers to review parent account registration requests, verify pupil links, authorize portal access for approved parents, reject invalid registrations with feedback, and manage parent account statuses safely through the Teacher Web Application.
+
+---
+
+### Development
+
+* **What Was Implemented**:
+  1. **Database Schema Additions (`lib/db.ts` & `prisma/schema.prisma`)**: Created the `parents` table in SQLite (`data/capstone.db`) and defined the `Parent` model in Prisma ORM, tracking `id`, `fullName`, `email`, `contactNumber`, `passwordHash`, `childName`, `childGradeLevel`, `childSection`, `teacherId`, `status`, `rejectionReason`, `createdAt`, and `updatedAt`.
+  2. **Parent List & Status Filtering API (`app/api/parents/route.ts`)**: Secure GET endpoint verifying teacher session via `getAuthenticatedTeacher()`, filtering by status (`All`, `Pending`, `Approved`, `Rejected`) and search queries (parent name, email, child name), aggregating live status counts, and strictly sanitizing sensitive fields (`passwordHash` is never returned).
+  3. **Parent Profile Details API (`app/api/parents/[id]/route.ts`)**: GET endpoint returning comprehensive single-parent records and linked Grade 3 child info.
+  4. **Parent Approval API (`app/api/parents/[id]/approve/route.ts`)**: PATCH endpoint verifying teacher authorization, validating that the parent is pending, updating status to `Approved`, associating `teacherId`, and saving updates to SQLite.
+  5. **Parent Rejection API (`app/api/parents/[id]/reject/route.ts`)**: PATCH endpoint verifying teacher authorization, updating status to `Rejected`, and recording optional teacher feedback.
+  6. **Status Confirmation Modal (`components/parents/status-confirm-modal.tsx`)**: Confirmation dialogs for both Approve and Reject actions, preventing accidental status updates.
+  7. **Parent Details Modal (`components/parents/parent-details-modal.tsx`)**: Modal inspector displaying parent contact info, linked pupil name, grade level, and section, with contextual action buttons.
+  8. **Parent Management Page (`app/parents/page.tsx`)**: Interactive UI with search input, status tabs with badge counts, data table, empty states, loading indicator, and toast notifications.
+  9. **Navigation Integration (`components/dashboard/dashboard-nav.tsx`)**: Activated `Parents` navigation item (`isImplemented: true`), linking directly to `/parents`.
+  10. **Login Page Accessibility Enhancements (`app/login/page.tsx`)**: Added explicit IDs (`#email-input`, `#password-input`, `#login-submit-btn`) for reliable testing, accessibility, and form indexing.
+* **Files Created**:
+  1. `app/api/parents/route.ts` - Backend GET route for parent list and status counts.
+  2. `app/api/parents/[id]/route.ts` - Backend GET route for single parent profile.
+  3. `app/api/parents/[id]/approve/route.ts` - Backend PATCH route for approving parent registrations.
+  4. `app/api/parents/[id]/reject/route.ts` - Backend PATCH route for rejecting parent registrations.
+  5. `components/parents/status-confirm-modal.tsx` - Confirmation dialog component for status updates.
+  6. `components/parents/parent-details-modal.tsx` - Detailed parent inspection modal component.
+  7. `app/parents/page.tsx` - Interactive Parent Management page.
+  8. `test_parent_management_module.mjs` - Automated regression test suite for Module 3.
+* **Files Modified**:
+  1. `lib/db.ts` - Added `parents` table creation in SQLite initializer.
+  2. `prisma/schema.prisma` - Added `Parent` model and relation on `Teacher`.
+  3. `components/dashboard/dashboard-nav.tsx` - Activated `Parents` navigation item.
+  4. `app/login/page.tsx` - Added explicit element IDs for accessibility and automated interaction.
+  5. `DEVELOPMENT_LOG.md` - Appended Update 4 documentation.
+* **Files Deleted**:
+  * None.
+* **Components Created**:
+  * `StatusConfirmModal` (`components/parents/status-confirm-modal.tsx`)
+  * `ParentDetailsModal` (`components/parents/parent-details-modal.tsx`)
+* **API Endpoints Created**:
+  * `GET /api/parents`
+  * `GET /api/parents/[id]`
+  * `PATCH /api/parents/[id]/approve`
+  * `PATCH /api/parents/[id]/reject`
+* **Database Changes**:
+  * Added `parents` table in SQLite (`data/capstone.db`):
+    - `id` (TEXT PRIMARY KEY)
+    - `fullName` (TEXT NOT NULL)
+    - `email` (TEXT UNIQUE NOT NULL)
+    - `contactNumber` (TEXT)
+    - `passwordHash` (TEXT NOT NULL)
+    - `childName` (TEXT NOT NULL)
+    - `childGradeLevel` (TEXT DEFAULT 'Grade 3')
+    - `childSection` (TEXT)
+    - `teacherId` (TEXT, FOREIGN KEY references `teachers.id`)
+    - `status` (TEXT DEFAULT 'Pending')
+    - `rejectionReason` (TEXT)
+    - `createdAt` (TEXT DEFAULT datetime('now'))
+    - `updatedAt` (TEXT DEFAULT datetime('now'))
+* **Prisma Schema Changes**:
+  * Added `model Parent` and `parents Parent[]` relation to `Teacher`.
+* **Dependencies Added**:
+  * None required (reused installed dependencies: `axios`, `better-sqlite3`, `lucide-react`, `bcryptjs`, `jsonwebtoken`).
+
+---
+
+### Problems & Solutions
+
+1. **Problem / Error**:
+   Test script encountered `SqliteError: no such table: parents` during the first test run.
+   * **Cause**:
+     The standalone Node test runner instantiated raw `better-sqlite3` directly against `data/capstone.db` without executing the application's lazy initializer in `lib/db.ts`.
+   * **Solution**:
+     Added an explicit table initialization block in `test_parent_management_module.mjs` so test suites can run independently in CI/CD without requiring prior server boot.
+   * **Result**:
+     Automated test script executed cleanly with all 31 assertions passing.
+
+2. **Problem / Error**:
+   The browser subagent encountered input focus difficulty when logging in via synthetic tab keys.
+   * **Cause**:
+     Form inputs on `/login` were styled using modern Tailwind utility wrappers but lacked explicit standard element IDs.
+   * **Solution**:
+     Added `id="email-input"`, `id="password-input"`, and `id="login-submit-btn"` to `app/login/page.tsx`.
+   * **Result**:
+     Browser subagents and accessibility screen readers can immediately target inputs cleanly and reliably.
+
+---
+
+### Testing
+
+* **Automated Tests Executed (`test_parent_management_module.mjs`)**:
+  1. **Test 1**: Unauthenticated request to `/api/parents` -> HTTP 401 Unauthorized (**PASS**).
+  2. **Test 2**: Unauthenticated visit to `/parents` -> Redirects to `/login?redirect=%2Fparents` (**PASS**).
+  3. **Test 3**: Authenticated fetch of parent records and status counts (**PASS**).
+  4. **Test 4**: Status filtering (`?status=Pending`) (**PASS**).
+  5. **Test 5**: Search filtering by pupil name (`?search=Maria`) (**PASS**).
+  6. **Test 6**: Single parent details retrieval without `passwordHash` (**PASS**).
+  7. **Test 7**: Approval action (`PATCH /api/parents/[id]/approve`) updating database status to `Approved` (**PASS**).
+  8. **Test 8**: Re-approval prevention returning HTTP 400 Bad Request (**PASS**).
+  9. **Test 9**: Rejection action (`PATCH /api/parents/[id]/reject`) recording rejection reason (**PASS**).
+  10. **Test 10**: Re-rejection prevention returning HTTP 400 Bad Request (**PASS**).
+  11. **Test 11**: Authenticated HTML page render for `/parents` (**PASS**).
+  12. **Cleanup**: Removed all test records from the database (**PASS**).
+  - Overall automated test result: **31/31 assertions passed (100%)**.
+* **Visual & Interactive Browser Subagent Testing**:
+  1. **Navigation Flow**: Logged into Teacher Portal, clicked "Parents" in sidebar, and loaded `/parents`.
+  2. **Empty State Display**: Confirmed clean message ("No parent accounts found") when no records exist.
+  3. **Table & Details Modal**: Seeded sample registrations; reviewed parent contact info and Grade 3 pupil details (`Maria Dela Cruz`).
+  4. **Approval Flow**: Approved Juan Dela Cruz via confirmation dialog; verified success toast banner and green `Approved` badge.
+  5. **Rejection Flow**: Rejected Lourdes Reyes via confirmation dialog with reason; verified red `Rejected` badge and updated live counts (All: 2, Pending: 0, Approved: 1, Rejected: 1).
+  - Video recording generated: `parent_approval_demo_1788433914323.webp`.
+  - Screenshot: `parent_mgmt_done_1788434005605.png`.
+  - Status: **PASSED (100%)**.
+
+---
+
+### Current Status
+
+* **Module 1 (Authentication Module)**: **100% Complete & Operational**.
+* **Module 2 (Teacher Dashboard Module)**: **100% Complete & Operational**.
+* **Module 3 (Parent Management Module)**: **100% Complete & Operational**.
+* Application builds cleanly (`npm run build`) and runs cleanly locally (`npm run dev` / `npm run start`).
+
+---
+
+### Ready for Next Module
+
+* **Module 4 (Classroom Management or Student Management)** is ready for development when instructed.
+
 
 

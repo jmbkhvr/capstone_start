@@ -56,6 +56,9 @@ model Teacher {
 
   // Relation to password reset requests created for this teacher.
   passwordResets PasswordReset[]
+
+  // Relation to parent registration requests managed by this teacher (Module 3).
+  parents        Parent[]
 }
 
 // ============================================================================
@@ -93,4 +96,59 @@ model PasswordReset {
 
   // Relation to Teacher model.
   teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================================
+// PARENT ACCOUNT MODEL (MODULE 3)
+// ============================================================================
+// What this model does:
+// Represents parent user registration requests and accounts for Grade 3 pupils.
+// Teachers review, approve, or reject these accounts.
+//
+// Security Note:
+// Passwords will be stored hashed with bcryptjs for future mobile app login.
+// Passwords and hashes are NEVER exposed to teacher client responses.
+// ============================================================================
+model Parent {
+  // Unique internal database ID (UUID string).
+  id              String   @id @default(uuid())
+
+  // Full name of the parent or guardian.
+  fullName        String
+
+  // Email address used by parent for communication & mobile app login.
+  email           String   @unique
+
+  // Contact number / telephone number for school notifications.
+  contactNumber   String?
+
+  // Cryptographically hashed password.
+  passwordHash    String
+
+  // Name of the Grade 3 child/pupil.
+  childName       String
+
+  // Grade level of child (defaults to 'Grade 3').
+  childGradeLevel String   @default("Grade 3")
+
+  // Classroom section (e.g. 'Diamond', 'Mabini').
+  childSection    String?
+
+  // Foreign key referencing the approving teacher account.
+  teacherId       String?
+
+  // Account status: 'Pending', 'Approved', 'Rejected'.
+  status          String   @default("Pending")
+
+  // Rejection note or feedback if rejected by the teacher.
+  rejectionReason String?
+
+  // Creation timestamp.
+  createdAt       DateTime @default(now())
+
+  // Last update timestamp.
+  updatedAt       DateTime @updatedAt
+
+  // Relation to Teacher model.
+  teacher         Teacher? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
 }
