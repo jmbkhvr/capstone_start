@@ -283,3 +283,277 @@ Executed automated test suite (`test_password_reset.mjs`) covering all 8 passwor
 * None for Module 1. The complete Teacher Authentication Module is finished.
 * Future teacher modules (Classrooms, Students, Reading Materials, Assessments, Pronunciation Scoring, Reports) will be developed in future modules as instructed.
 
+---
+
+## Update 3 - 6:18 PM September 3, 2026
+
+### Update Information
+
+* **Update Number**: Update 3
+* **Exact Time**: 6:18 PM
+* **Exact Date**: September 3, 2026
+* **What Was Worked On**:
+  Complete design, backend API development, interactive frontend UI implementation, responsive layouts, data ownership enforcement, empty state design, Recharts performance visualization, and full automated & visual verification of **Module 2: Teacher Dashboard Module**.
+* **Why It Was Done**:
+  To serve as the primary landing page after teacher authentication, providing the authenticated teacher with an informative, clean overview of their Grade 3 pupils, classroom sections, reading assessments, diagnostic performance overview, system notifications, and direct access shortcuts to upcoming teacher modules.
+
+---
+
+### Development
+
+* **What Was Implemented**:
+  1. **Backend Dashboard API (`/api/dashboard`)**: Secure GET route verifying the teacher's session using `getAuthenticatedTeacher()` from HTTP-Only cookies, enforcing strict data isolation so teachers only see their own classes and pupils, and calculating summary metrics (`totalStudents`, `totalClasses`, `totalAssessments`, `studentsNeedingAttention`), recent assessment activity, and reading performance category averages with resilient schema checks.
+  2. **Unified Navigation System (`components/dashboard/dashboard-nav.tsx`)**: Responsive navigation supporting desktop sidebar and mobile drawer toggle, covering all 11 required navigation items (Dashboard [active], Parents, Classrooms, Students, Reading Materials, Assessments, Results & Reports, Monitoring & Progress, Notifications, Profile, and Logout) with informative modal dialogs for upcoming modules.
+  3. **KPI Summary Cards (`components/dashboard/summary-card.tsx`)**: 4 cards (Total Students, Total Classes, Assessments, Needs Attention) with support for empty indicators and dual-theme styling.
+  4. **Recent Assessments Table (`components/dashboard/recent-assessments-table.tsx`)**: Data table displaying Student, Assessment, Date, Score, and Status, with an informative DepEd reading empty state when no tests exist yet.
+  5. **Student Performance Overview (`components/dashboard/performance-chart.tsx`)**: Interactive Recharts bar visualization tracking the 4 key Grade 3 oral reading dimensions (Reading Accuracy, Pronunciation, Reading Fluency, Overall Performance) against DepEd benchmark targets.
+  6. **Quick Access Shortcuts (`components/dashboard/quick-access.tsx`)**: Action buttons ([ Manage Classes ], [ Manage Students ], [ Reading Materials ], [ Assessments ]) with interactive modal dialogs detailing upcoming module schedules.
+  7. **Main Teacher Dashboard Page (`app/dashboard/page.tsx`)**: Rebuilt page utilizing Axios for HTTP communication, dynamic time-of-day greeting ("Good morning / Good afternoon / Good evening, Teacher [Name]!"), unread notification dropdown, responsive loading spinner, error banner with retry action, and dual-theme compatibility.
+* **Files Created**:
+  1. `app/api/dashboard/route.ts` - Backend GET route handler for teacher dashboard data.
+  2. `components/dashboard/dashboard-nav.tsx` - Reusable navigation component with sidebar and drawer.
+  3. `components/dashboard/summary-card.tsx` - Modular KPI card component.
+  4. `components/dashboard/recent-assessments-table.tsx` - Recent assessment table with empty state handling.
+  5. `components/dashboard/performance-chart.tsx` - Recharts performance chart component.
+  6. `components/dashboard/quick-access.tsx` - Quick access action panel component.
+  7. `test_dashboard_module.mjs` - Automated regression test suite for Module 2.
+* **Files Modified**:
+  1. `app/dashboard/page.tsx` - Completely rebuilt dashboard UI using Axios and modular components.
+  2. `package.json` - Added `axios` and `recharts` dependencies.
+  3. `DEVELOPMENT_LOG.md` - Appended Update 3 documentation.
+* **Files Deleted**:
+  * None.
+* **Components Created**:
+  * `DashboardNav` (`components/dashboard/dashboard-nav.tsx`)
+  * `SummaryCard` (`components/dashboard/summary-card.tsx`)
+  * `RecentAssessmentsTable` (`components/dashboard/recent-assessments-table.tsx`)
+  * `PerformanceChart` (`components/dashboard/performance-chart.tsx`)
+  * `QuickAccess` (`components/dashboard/quick-access.tsx`)
+* **API Endpoints Created/Modified**:
+  * `GET /api/dashboard` (Created) - Protected endpoint returning authenticated teacher dashboard payload.
+* **Database Changes**:
+  * Leveraged existing `teachers` and `password_resets` tables. Added resilient schema-inspection queries checking for future tables (`classrooms`, `students`, `student_assessments`, `performance_metrics`) so that as future modules are introduced, the dashboard queries will automatically reflect real data without code changes.
+* **Dependencies Installed**:
+  * `axios` (^1.20.0) - Promise-based HTTP client for API requests as required by Plan A.
+  * `recharts` (^3.10.1) - Composable charting library for React 19 as required by Plan A.
+* **Authentication Integration**:
+  * Utilized existing `getAuthenticatedTeacher()` in `lib/auth.ts` to decode `teacher_auth_token` JWT cookie.
+  * Middleware (`middleware.ts`) automatically intercepts unauthenticated visits to `/dashboard` and redirects to `/login`.
+  * Frontend handles HTTP 401 gracefully by routing to `/login`.
+  * Logout action clears the cookie session and routes to `/login`.
+
+---
+
+### Problems & Solutions
+
+1. **Problem / Error**:
+   Upcoming module database tables (`classrooms`, `students`, `assessments`) do not exist yet in the database schema. Direct SQL queries (e.g. `SELECT COUNT(*) FROM classrooms`) would trigger SQLite `no such table` runtime exceptions.
+   * **Cause**:
+     Classrooms, students, and reading assessments belong to future modules (Module 3 through Module 6) and have not yet been migrated.
+   * **Solution**:
+     Implemented a safe helper `tableExists(tableName)` querying SQLite's `sqlite_master` catalog before querying each table. If tables are not yet created, safe default values (`0` and empty arrays `[]`) are returned.
+   * **Result**:
+     The dashboard API executes cleanly with zero runtime database errors, displays real counts when tables are added, and avoids fabricating fake data.
+
+2. **Problem / Error**:
+   Clicking future module links in the navigation bar or quick access buttons could navigate to dead 404 pages or create broken user experiences.
+   * **Cause**:
+     Modules 3–11 have not yet been developed, per explicit project instructions to strictly focus on Module 2.
+   * **Solution**:
+     Configured `DashboardNav` and `QuickAccess` components to intercept future module clicks and present clean modal notifications explaining the module's planned purpose and development phase.
+   * **Result**:
+     The navigation structure is fully visible and prepared for future modules while remaining functional and preventing dead links.
+
+---
+
+### Testing
+
+* **Automated Tests Executed (`test_dashboard_module.mjs`)**:
+  1. **Test 1**: Unauthenticated `GET /api/dashboard` request.
+     - Expected: HTTP 401 Unauthorized with `{ error: 'Unauthorized...' }`.
+     - Actual: HTTP 401 Unauthorized with expected JSON error.
+     - Status: **PASSED**.
+  2. **Test 2**: Unauthenticated navigation to `/dashboard`.
+     - Expected: HTTP 307/302 redirect to `/login?redirect=%2Fdashboard`.
+     - Actual: HTTP 307 redirect to `/login?redirect=%2Fdashboard`.
+     - Status: **PASSED**.
+  3. **Test 3**: Authenticated `GET /api/dashboard` for Teacher 1 (`maria.santos@school.edu.ph`).
+     - Expected: HTTP 200 OK with Teacher 1 profile, summary counts (0), and arrays.
+     - Actual: HTTP 200 OK matching Teacher 1 credentials and all required keys.
+     - Status: **PASSED**.
+  4. **Test 4**: Authenticated `GET /api/dashboard` for Teacher 2 (`sample@gmail.com`).
+     - Expected: HTTP 200 OK with Teacher 2 profile, verifying data ownership isolation.
+     - Actual: HTTP 200 OK, Teacher 2 payload strictly isolated from Teacher 1.
+     - Status: **PASSED**.
+  5. **Test 5**: Authenticated HTML page render for `/dashboard`.
+     - Expected: HTTP 200 OK.
+     - Actual: HTTP 200 OK.
+     - Status: **PASSED**.
+* **Visual & Interactive Browser Subagent Testing**:
+  1. **Login Flow**: Submitted valid credentials (`reset.teacher@school.edu.ph` / `NewPassword999!`) on `/login`; confirmed redirect to `/dashboard`.
+  2. **Greeting & Header**: Verified dynamic personalized greeting (`Good evening, Reset Test Teacher! 👋`) and teacher ID badge (`T-RESET-999`).
+  3. **Summary Cards**: Verified 4 cards rendered with zero counts and polite empty indicators ("No records yet").
+  4. **Performance Chart**: Verified Recharts bar chart rendered Phil-IRI dimensions with DepEd benchmark comparison bars and empty state guidance overlay.
+  5. **Recent Assessments**: Verified empty state message ("No assessments have been recorded yet").
+  6. **Quick Access**: Clicked "Manage Classes"; confirmed upcoming module modal opened and closed smoothly.
+  7. **Notification Bell**: Clicked notification bell; confirmed dropdown opened displaying Module 2 welcome notice.
+  8. **Theme Toggle**: Toggled to Child Mode (light emerald/amber) and back to Teacher Mode (dark slate/teal); confirmed smooth theme transitions.
+  - Video recording generated: `teacher_dashboard_demo_1788430428341.webp`.
+  - Status: **PASSED (100%)**.
+
+---
+
+### Current Status
+
+* **Module 1 (Authentication Module)**: **100% Complete & Operational**.
+* **Module 2 (Teacher Dashboard Module)**: **100% Complete & Operational**.
+* Application builds cleanly (`npm run build`) and runs cleanly locally (`npm run dev` / `npm run start`).
+
+---
+
+### Ready for Next Module
+
+* **Module 3: Parent Management Module** was completed in Update 4 below.
+* The Teacher Dashboard navigation and database hooks are already prepared to seamlessly receive classroom data when Classroom Management is implemented.
+
+---
+
+## Update 4 - 7:25 PM September 3, 2026
+
+### Update Information
+
+* **Update Number**: Update 4
+* **Exact Time**: 7:25 PM
+* **Exact Date**: September 3, 2026
+* **What Was Worked On**:
+  Complete design, database schema additions, backend REST API routes, frontend UI implementation, search and status filtering, parent detail inspections, approval and rejection workflows with confirmation dialogs, and automated & visual verification of **Module 3: Parent Management Module**.
+* **Why It Was Done**:
+  To enable Grade 3 school teachers to review parent account registration requests, verify pupil links, authorize portal access for approved parents, reject invalid registrations with feedback, and manage parent account statuses safely through the Teacher Web Application.
+
+---
+
+### Development
+
+* **What Was Implemented**:
+  1. **Database Schema Additions (`lib/db.ts` & `prisma/schema.prisma`)**: Created the `parents` table in SQLite (`data/capstone.db`) and defined the `Parent` model in Prisma ORM, tracking `id`, `fullName`, `email`, `contactNumber`, `passwordHash`, `childName`, `childGradeLevel`, `childSection`, `teacherId`, `status`, `rejectionReason`, `createdAt`, and `updatedAt`.
+  2. **Parent List & Status Filtering API (`app/api/parents/route.ts`)**: Secure GET endpoint verifying teacher session via `getAuthenticatedTeacher()`, filtering by status (`All`, `Pending`, `Approved`, `Rejected`) and search queries (parent name, email, child name), aggregating live status counts, and strictly sanitizing sensitive fields (`passwordHash` is never returned).
+  3. **Parent Profile Details API (`app/api/parents/[id]/route.ts`)**: GET endpoint returning comprehensive single-parent records and linked Grade 3 child info.
+  4. **Parent Approval API (`app/api/parents/[id]/approve/route.ts`)**: PATCH endpoint verifying teacher authorization, validating that the parent is pending, updating status to `Approved`, associating `teacherId`, and saving updates to SQLite.
+  5. **Parent Rejection API (`app/api/parents/[id]/reject/route.ts`)**: PATCH endpoint verifying teacher authorization, updating status to `Rejected`, and recording optional teacher feedback.
+  6. **Status Confirmation Modal (`components/parents/status-confirm-modal.tsx`)**: Confirmation dialogs for both Approve and Reject actions, preventing accidental status updates.
+  7. **Parent Details Modal (`components/parents/parent-details-modal.tsx`)**: Modal inspector displaying parent contact info, linked pupil name, grade level, and section, with contextual action buttons.
+  8. **Parent Management Page (`app/parents/page.tsx`)**: Interactive UI with search input, status tabs with badge counts, data table, empty states, loading indicator, and toast notifications.
+  9. **Navigation Integration (`components/dashboard/dashboard-nav.tsx`)**: Activated `Parents` navigation item (`isImplemented: true`), linking directly to `/parents`.
+  10. **Login Page Accessibility Enhancements (`app/login/page.tsx`)**: Added explicit IDs (`#email-input`, `#password-input`, `#login-submit-btn`) for reliable testing, accessibility, and form indexing.
+* **Files Created**:
+  1. `app/api/parents/route.ts` - Backend GET route for parent list and status counts.
+  2. `app/api/parents/[id]/route.ts` - Backend GET route for single parent profile.
+  3. `app/api/parents/[id]/approve/route.ts` - Backend PATCH route for approving parent registrations.
+  4. `app/api/parents/[id]/reject/route.ts` - Backend PATCH route for rejecting parent registrations.
+  5. `components/parents/status-confirm-modal.tsx` - Confirmation dialog component for status updates.
+  6. `components/parents/parent-details-modal.tsx` - Detailed parent inspection modal component.
+  7. `app/parents/page.tsx` - Interactive Parent Management page.
+  8. `test_parent_management_module.mjs` - Automated regression test suite for Module 3.
+* **Files Modified**:
+  1. `lib/db.ts` - Added `parents` table creation in SQLite initializer.
+  2. `prisma/schema.prisma` - Added `Parent` model and relation on `Teacher`.
+  3. `components/dashboard/dashboard-nav.tsx` - Activated `Parents` navigation item.
+  4. `app/login/page.tsx` - Added explicit element IDs for accessibility and automated interaction.
+  5. `DEVELOPMENT_LOG.md` - Appended Update 4 documentation.
+* **Files Deleted**:
+  * None.
+* **Components Created**:
+  * `StatusConfirmModal` (`components/parents/status-confirm-modal.tsx`)
+  * `ParentDetailsModal` (`components/parents/parent-details-modal.tsx`)
+* **API Endpoints Created**:
+  * `GET /api/parents`
+  * `GET /api/parents/[id]`
+  * `PATCH /api/parents/[id]/approve`
+  * `PATCH /api/parents/[id]/reject`
+* **Database Changes**:
+  * Added `parents` table in SQLite (`data/capstone.db`):
+    - `id` (TEXT PRIMARY KEY)
+    - `fullName` (TEXT NOT NULL)
+    - `email` (TEXT UNIQUE NOT NULL)
+    - `contactNumber` (TEXT)
+    - `passwordHash` (TEXT NOT NULL)
+    - `childName` (TEXT NOT NULL)
+    - `childGradeLevel` (TEXT DEFAULT 'Grade 3')
+    - `childSection` (TEXT)
+    - `teacherId` (TEXT, FOREIGN KEY references `teachers.id`)
+    - `status` (TEXT DEFAULT 'Pending')
+    - `rejectionReason` (TEXT)
+    - `createdAt` (TEXT DEFAULT datetime('now'))
+    - `updatedAt` (TEXT DEFAULT datetime('now'))
+* **Prisma Schema Changes**:
+  * Added `model Parent` and `parents Parent[]` relation to `Teacher`.
+* **Dependencies Added**:
+  * None required (reused installed dependencies: `axios`, `better-sqlite3`, `lucide-react`, `bcryptjs`, `jsonwebtoken`).
+
+---
+
+### Problems & Solutions
+
+1. **Problem / Error**:
+   Test script encountered `SqliteError: no such table: parents` during the first test run.
+   * **Cause**:
+     The standalone Node test runner instantiated raw `better-sqlite3` directly against `data/capstone.db` without executing the application's lazy initializer in `lib/db.ts`.
+   * **Solution**:
+     Added an explicit table initialization block in `test_parent_management_module.mjs` so test suites can run independently in CI/CD without requiring prior server boot.
+   * **Result**:
+     Automated test script executed cleanly with all 31 assertions passing.
+
+2. **Problem / Error**:
+   The browser subagent encountered input focus difficulty when logging in via synthetic tab keys.
+   * **Cause**:
+     Form inputs on `/login` were styled using modern Tailwind utility wrappers but lacked explicit standard element IDs.
+   * **Solution**:
+     Added `id="email-input"`, `id="password-input"`, and `id="login-submit-btn"` to `app/login/page.tsx`.
+   * **Result**:
+     Browser subagents and accessibility screen readers can immediately target inputs cleanly and reliably.
+
+---
+
+### Testing
+
+* **Automated Tests Executed (`test_parent_management_module.mjs`)**:
+  1. **Test 1**: Unauthenticated request to `/api/parents` -> HTTP 401 Unauthorized (**PASS**).
+  2. **Test 2**: Unauthenticated visit to `/parents` -> Redirects to `/login?redirect=%2Fparents` (**PASS**).
+  3. **Test 3**: Authenticated fetch of parent records and status counts (**PASS**).
+  4. **Test 4**: Status filtering (`?status=Pending`) (**PASS**).
+  5. **Test 5**: Search filtering by pupil name (`?search=Maria`) (**PASS**).
+  6. **Test 6**: Single parent details retrieval without `passwordHash` (**PASS**).
+  7. **Test 7**: Approval action (`PATCH /api/parents/[id]/approve`) updating database status to `Approved` (**PASS**).
+  8. **Test 8**: Re-approval prevention returning HTTP 400 Bad Request (**PASS**).
+  9. **Test 9**: Rejection action (`PATCH /api/parents/[id]/reject`) recording rejection reason (**PASS**).
+  10. **Test 10**: Re-rejection prevention returning HTTP 400 Bad Request (**PASS**).
+  11. **Test 11**: Authenticated HTML page render for `/parents` (**PASS**).
+  12. **Cleanup**: Removed all test records from the database (**PASS**).
+  - Overall automated test result: **31/31 assertions passed (100%)**.
+* **Visual & Interactive Browser Subagent Testing**:
+  1. **Navigation Flow**: Logged into Teacher Portal, clicked "Parents" in sidebar, and loaded `/parents`.
+  2. **Empty State Display**: Confirmed clean message ("No parent accounts found") when no records exist.
+  3. **Table & Details Modal**: Seeded sample registrations; reviewed parent contact info and Grade 3 pupil details (`Maria Dela Cruz`).
+  4. **Approval Flow**: Approved Juan Dela Cruz via confirmation dialog; verified success toast banner and green `Approved` badge.
+  5. **Rejection Flow**: Rejected Lourdes Reyes via confirmation dialog with reason; verified red `Rejected` badge and updated live counts (All: 2, Pending: 0, Approved: 1, Rejected: 1).
+  - Video recording generated: `parent_approval_demo_1788433914323.webp`.
+  - Screenshot: `parent_mgmt_done_1788434005605.png`.
+  - Status: **PASSED (100%)**.
+
+---
+
+### Current Status
+
+* **Module 1 (Authentication Module)**: **100% Complete & Operational**.
+* **Module 2 (Teacher Dashboard Module)**: **100% Complete & Operational**.
+* **Module 3 (Parent Management Module)**: **100% Complete & Operational**.
+* Application builds cleanly (`npm run build`) and runs cleanly locally (`npm run dev` / `npm run start`).
+
+---
+
+### Ready for Next Module
+
+* **Module 4 (Classroom Management or Student Management)** is ready for development when instructed.
+
+
+

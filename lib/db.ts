@@ -62,6 +62,26 @@ function getDatabase(): Database.Database {
       createdAt TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (teacherId) REFERENCES teachers(id) ON DELETE CASCADE
     );
+
+    -- PARENT ACCOUNTS TABLE (MODULE 3)
+    -- Stores parent registration requests, contact info, linked Grade 3 pupil,
+    -- account status ('Pending', 'Approved', 'Rejected'), and teacher ownership.
+    CREATE TABLE IF NOT EXISTS parents (
+      id TEXT PRIMARY KEY,
+      fullName TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      contactNumber TEXT,
+      passwordHash TEXT NOT NULL,
+      childName TEXT NOT NULL,
+      childGradeLevel TEXT DEFAULT 'Grade 3',
+      childSection TEXT,
+      teacherId TEXT,
+      status TEXT DEFAULT 'Pending',
+      rejectionReason TEXT,
+      createdAt TEXT DEFAULT (datetime('now')),
+      updatedAt TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (teacherId) REFERENCES teachers(id) ON DELETE SET NULL
+    );
   `);
 
   return dbInstance;
