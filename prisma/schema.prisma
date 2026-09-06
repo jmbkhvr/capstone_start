@@ -65,6 +65,9 @@ model Teacher {
 
   // Relation to students managed by this teacher (Module 5).
   students       Student[]
+
+  // Relation to reading materials created by this teacher (Module 6).
+  readingMaterials ReadingMaterial[]
 }
 
 // ============================================================================
@@ -269,6 +272,58 @@ model Student {
 
   // Relation to linked Parent account (optional).
   parent      Parent?   @relation(fields: [parentId], references: [id], onDelete: SetNull)
+}
+
+// ============================================================================
+// READING MATERIAL MODEL (MODULE 6: READING MATERIALS)
+// ============================================================================
+// What this model does:
+// Represents teacher-created reading passages used as reference texts for oral
+// reading assessments. Supports multiple grade levels (Grade 1 through Grade 6).
+//
+// Soft Archiving Note:
+// Uses soft archiving (status = 'Archived') instead of permanent hard deletion to
+// protect the data integrity of future reading assessment logs and speech metrics.
+// ============================================================================
+model ReadingMaterial {
+  // Unique internal database ID generated as a UUID string.
+  id          String   @id @default(uuid())
+
+  // Foreign key pointing to the teacher who created and owns this material.
+  teacherId   String
+
+  // Title of the reading passage (e.g., "The Little Red Hen").
+  title       String
+
+  // Optional description, instructions, or notes for the material.
+  description String?
+
+  // Type classification: retained for backward compatibility, always 'Passage'.
+  type        String
+
+  // Actual text content of the reading passage (the reference passage for assessments).
+  content     String
+
+  // Computed word count (accurate word count ignoring standalone punctuation).
+  wordCount   Int      @default(0)
+
+  // Difficulty tier: 'Easy', 'Moderate', or 'Difficult'.
+  difficulty  String   @default("Easy")
+
+  // Target educational grade level (e.g. 'Grade 1', 'Grade 2', ... 'Grade 6').
+  gradeLevel  String   @default("Grade 3")
+
+  // Lifecycle status: 'Active' (available for assessments) or 'Archived'.
+  status      String   @default("Active")
+
+  // Creation timestamp recorded when material was saved.
+  createdAt   DateTime @default(now())
+
+  // Timestamp updated automatically whenever material info changes.
+  updatedAt   DateTime @updatedAt
+
+  // Relation to owning Teacher account.
+  teacher     Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 }
 
 

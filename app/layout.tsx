@@ -6,9 +6,9 @@ import { ThemeProvider } from '@/lib/theme-context';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Grade 3 Reading Assessment System',
+  title: 'Reading Proficiency Assessment System',
   description:
-    'Web-Based Reading Proficiency Assessment System with Automated Pronunciation Scoring Platform for Grade 3 Pupils',
+    'Web-Based Reading Proficiency Assessment System with Automated Pronunciation Scoring Platform',
 };
 
 export default function RootLayout({

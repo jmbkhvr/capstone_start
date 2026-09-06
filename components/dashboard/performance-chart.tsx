@@ -207,7 +207,7 @@ export function PerformanceChart({ data }: PerformanceChartProps) {
             : 'border-slate-800/80 text-slate-500'
         }`}
       >
-        <span>DepEd Grade 3 Oral Reading Diagnostic Standards</span>
+        <span>DepEd Oral Reading Diagnostic Standards</span>
         <span>{hasData ? 'Active Assessment Data' : 'Awaiting Assessments'}</span>
       </div>
     </div>

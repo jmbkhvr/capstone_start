@@ -866,7 +866,243 @@ Executed automated test suite (`test_password_reset.mjs`) covering all 8 passwor
 
 * **Module 6: Reading Materials Management Module** will implement the DepEd Grade 3 graded reading passage library, phoneme exercises, and oral comprehension questions when explicitly instructed.
 
+---
 
+## Update 7 - 7:30 PM September 6, 2026
 
+### Update Information
 
+* **Update Number**: Update 7
+* **Exact Time**: 7:30 PM
+* **Exact Date**: September 6, 2026
+* **What Was Worked On**: 
+  Complete design, architecture, and implementation of **Module 6: Reading Materials Module** for the Teacher Side of the capstone system (*Web-Based Reading Proficiency Assessment System with Automated Pronunciation Scoring Platform for Grade 3 Pupils*). This includes:
+  - Reading Passages creation with punctuation-independent real-time word counting (`computePassageWordCount`).
+  - Word Lists creation with line-by-line sequence preservation and whitespace filtering (`parseWordList`).
+  - Interactive Material Details preview modal (displaying formatted paragraph passages and numbered vocabulary word grids).
+  - Edit Material modal with real-time recalculation of word count.
+  - Soft Archive and Restore modal with prominent Data Preservation assurance (preventing orphan records for future assessment modules).
+  - Search, multi-criteria filtering (by Type: All/Passage/Word List, Difficulty: All/Easy/Moderate/Challenging, and Status: All/Active/Archived), and multi-column sorting (Title, Type, Difficulty, Word Count, Date).
+  - 4 KPI summary cards (Total Materials, Reading Passages, Word Lists, Active for Assessment).
+  - Complete dual-theme contrast styling (`data-theme="teacher"` and `data-theme="child"`).
+  - Automated integration test suite (`test_reading_materials_module.mjs`) covering 48 assertions.
+* **Why It Was Done**: 
+  To give Grade 3 teachers a robust, Phil-IRI-aligned repository for creating, previewing, and managing reading materials that will serve as the stimulus for oral reading fluency and automated pronunciation assessments in Module 7.
 
+---
+
+### Files Created
+
+1. **`app/api/reading-materials/route.ts`**: Backend GET (search, multi-criteria filtering, sorting, KPI metrics calculation) and POST (creation of Passages and Word Lists with server-side validation and word counting).
+2. **`app/api/reading-materials/[id]/route.ts`**: Backend GET (single material retrieval with teacher ownership check) and PUT (editing title, difficulty, and content with word recount).
+3. **`app/api/reading-materials/[id]/archive/route.ts`**: Backend PATCH (soft archive toggle between `'Archived'` and `'Active'`).
+4. **`components/reading-materials/create-material-modal.tsx`**: Modal for creating Reading Passages and Word Lists with live word/character counters and difficulty selector.
+5. **`components/reading-materials/material-details-modal.tsx`**: Preview card modal showing formatted passage reading view or numbered word list grid.
+6. **`components/reading-materials/edit-material-modal.tsx`**: Modal for updating existing materials with live word recalculation.
+7. **`components/reading-materials/archive-confirm-modal.tsx`**: Safety modal confirming archiving or restoration with explicit data preservation notice.
+8. **`app/reading-materials/page.tsx`**: Main dashboard interface for Reading Materials with 4 KPI cards, status tabs, search, filter dropdowns, responsive table, and modal integrations.
+9. **`test_reading_materials_module.mjs`**: Comprehensive automated test script validating authentication, validation, passage counting, word list parsing, single retrieval, updates, archiving/restoration, multi-tenant isolation, and HTML render.
+
+---
+
+### Files Modified
+
+1. **`lib/db.ts`**: Added schema migration creating the `reading_materials` SQLite table with foreign keys, indexes, and default values.
+2. **`prisma/schema.prisma`**: Added the `ReadingMaterial` model and established one-to-many relationship with `Teacher`.
+3. **`components/dashboard/dashboard-nav.tsx`**: Activated `/reading-materials` navigation item (`isImplemented: true`, removed "Soon" badge).
+4. **`components/dashboard/quick-access.tsx`**: Activated Reading Materials quick card (`badge: 'Active'`, linked to `/reading-materials`).
+5. **`DEVELOPMENT_LOG.md`**: Documented complete Update 7 implementation.
+
+---
+
+### Files Deleted
+
+* None.
+
+---
+
+### Important Code Changes
+
+* **Punctuation-Independent Word Counting**: Implemented standard reading assessment word counting logic that splits on whitespace and strips leading/trailing punctuation using Unicode property escapes (`replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '')`), ensuring words like `"forest,"` or `"butterfly!"` count accurately as single words.
+* **Word List Parser**: Implemented sequential line parser for vocabulary lists that strips whitespace, discards blank lines, counts non-empty items, and maintains original entry order.
+* **Soft Archiving**: Materials are never physically deleted from SQLite. Setting `status = 'Archived'` ensures historical assessment records in Module 7 will always preserve referential integrity.
+* **Multi-Tenant Scoping**: All database queries strictly enforce `WHERE teacherId = ?` using authenticated teacher session tokens, preventing cross-teacher access.
+* **Teacher Mode Contrast Optimization**: Explicit conditional color tokens ensure crisp readability across both Child Mode (playful pastels) and Teacher Mode (clean high-contrast slate/navy palette).
+
+---
+
+### Database Changes
+
+* Created `reading_materials` table in SQLite (`data/capstone.db`):
+  * `id TEXT PRIMARY KEY` (UUID)
+  * `title TEXT NOT NULL`
+  * `type TEXT NOT NULL CHECK(type IN ('Passage', 'Word List'))`
+  * `difficulty TEXT NOT NULL CHECK(difficulty IN ('Easy', 'Moderate', 'Challenging'))`
+  * `gradeLevel TEXT NOT NULL DEFAULT 'Grade 3'`
+  * `wordCount INTEGER NOT NULL DEFAULT 0`
+  * `content TEXT NOT NULL`
+  * `status TEXT NOT NULL DEFAULT 'Active' CHECK(status IN ('Active', 'Archived'))`
+  * `teacherId TEXT NOT NULL REFERENCES teachers(id) ON DELETE CASCADE`
+  * `createdAt TEXT DEFAULT (datetime('now'))`
+  * `updatedAt TEXT DEFAULT (datetime('now'))`
+* Created index `idx_reading_materials_teacher` on `reading_materials(teacherId)`.
+* Created index `idx_reading_materials_status` on `reading_materials(status)`.
+
+---
+
+### Verification and Testing Results
+
+* **Automated Tests Executed (`test_reading_materials_module.mjs`)**:
+  1. Unauthenticated `GET /api/reading-materials` returns HTTP 401 Unauthorized (**PASS**).
+  2. Unauthenticated `POST /api/reading-materials` returns HTTP 401 Unauthorized (**PASS**).
+  3. Unauthenticated visit to `/reading-materials` redirects to `/login` (**PASS**).
+  4. Authenticated `GET /api/reading-materials` returns list and KPI counts (**PASS**).
+  5. Input validations on `POST /api/reading-materials` (empty title, invalid type, empty content, punctuation-only) return HTTP 400 (**PASS**).
+  6. Passage creation with accurate word counting (23 words) returns HTTP 201 (**PASS**).
+  7. Word list creation with whitespace line filtering and order preservation (5 words) returns HTTP 201 (**PASS**).
+  8. Single material retrieval (`GET /api/reading-materials/[id]`) (**PASS**).
+  9. Material editing (`PUT /api/reading-materials/[id]`) with word recount (**PASS**).
+  10. Soft archiving (`PATCH /api/reading-materials/[id]/archive`) sets status to `'Archived'` (**PASS**).
+  11. Material restoration returns status to `'Active'` (**PASS**).
+  12. Search query filtering locates material by keyword (**PASS**).
+  13. Type filter returns only passages or word lists (**PASS**).
+  14. Difficulty filter returns only selected difficulty (**PASS**).
+  15. Multi-column sorting (`wordCount DESC`) orders records properly (**PASS**).
+  16. Multi-tenant isolation: Teacher B cannot view, edit, or archive Teacher A's materials (**PASS**).
+  17. Authenticated HTML page render for `/reading-materials` returns HTTP 200 OK (**PASS**).
+  - Overall automated result: **48/48 tests passed (100%)**.
+
+* **Regression Tests Executed**:
+  - `test_student_management_module.mjs`: **37/37 passed (100%)**.
+  - `test_classroom_management_module.mjs`: **50/50 passed (100%)**.
+  - `test_parent_management_module.mjs`: **31/31 passed (100%)**.
+  - Total Passing Tests: **166/166 passed across all modules (100%)**.
+  - Next.js Production Build (`npm run build`): **Compiled successfully in 7.7s, 0 TypeScript/lint errors**.
+
+---
+
+### Current Status
+
+* **Module 1 (Authentication Module)**: **100% Complete & Operational**.
+* **Module 2 (Teacher Dashboard Module)**: **100% Complete & Operational**.
+* **Module 3 (Parent Management Module)**: **100% Complete & Operational**.
+* **Module 4 (Classroom Management Module)**: **100% Complete & Operational**.
+* **Module 5 (Student Management Module)**: **100% Complete & Operational**.
+* **Module 6 (Reading Materials Module)**: **100% Complete & Operational**.
+* Application builds cleanly (`npm run build`) and runs locally at `http://localhost:3000`.
+
+---
+
+### Deferred Functionality & Next Steps
+
+* **Module 7: Assessment Module** will implement the oral reading assessment setup, audio recording, automated pronunciation scoring, and Phil-IRI oral reading metric calculations when explicitly instructed.
+
+---
+
+## Update 8 - 7:55 PM September 6, 2026
+
+### Update Information
+
+* **Update Number**: Update 8
+* **Exact Time**: 7:55 PM
+* **Exact Date**: September 6, 2026
+* **What Was Worked On**:
+  System-wide update transitioning the application to a **generic grade level reading assessment architecture** (supporting Grade 1 through Grade 6) and removing the Word List material type in **Module 6 (Reading Materials Module)**:
+  - **Removed Word Lists**: Simplified the reading materials repository strictly to **Reading Passages**, which serve as the reference text and ground truth for word-matching scoring and speech evaluation in upcoming reading assessment modules.
+  - **Generic Grade Level Support**: Added grade level selectors (`Grade 1` through `Grade 6`) across passage creation, editing, and filtering, replacing all hardcoded Grade 3 restrictions in the Module 6 user interface and APIs.
+  - **Database Migration**: Added an automatic database migration in `lib/db.ts` converting any existing legacy Word List records in SQLite to `'Passage'` type.
+  - **Global Application Branding**: Updated `app/layout.tsx`, `lib/email.ts`, `components/dashboard/dashboard-nav.tsx`, `components/dashboard/quick-access.tsx`, `components/dashboard/performance-chart.tsx`, and `components/dashboard/recent-assessments-table.tsx` to use the generalized title *"Reading Proficiency Assessment System"* and generic pupil/reading diagnostic terminology while preserving the academic capstone context.
+  - **Automated Integration Tests**: Updated `test_reading_materials_module.mjs` to test multi-grade passage creation (Grade 1 through Grade 6) and grade filtering (`?grade=Grade 4`). Verified 100% pass rate across 47 tests.
+* **Why It Was Done**:
+  To generalize the platform beyond Grade 3, enabling multi-grade elementary reading assessment (Grades 1 to 6) while focusing Module 6 strictly on reference reading passages required for automated pronunciation and oral reading fluency scoring.
+
+---
+
+### Files Created
+
+* None (in-place enhancement and modernization of existing module files).
+
+---
+
+### Files Modified
+
+1. **`lib/db.ts`**: Updated `reading_materials` table documentation and added migration updating any `type = 'Word List'` to `'Passage'`.
+2. **`prisma/schema.prisma`**: Updated `ReadingMaterial` model comments and generalized grade level documentation.
+3. **`app/api/reading-materials/route.ts`**: Removed Word List parser; added `ALLOWED_GRADE_LEVELS` (Grade 1–6); updated GET query to support grade filtering (`?grade=...`); updated POST handler to accept `gradeLevel` and always store as `'Passage'`.
+4. **`app/api/reading-materials/[id]/route.ts`**: Updated PUT handler to support `gradeLevel` updates and passage word recounting.
+5. **`components/reading-materials/create-material-modal.tsx`**: Removed Word List tabs; added Grade Level dropdown (`Grade 1` to `Grade 6`).
+6. **`components/reading-materials/edit-material-modal.tsx`**: Removed Word List indicators; added editable Grade Level selector with real-time passage word count recalculation.
+7. **`components/reading-materials/material-details-modal.tsx`**: Cleaned modal preview to focus exclusively on readable passage text and grade level metadata.
+8. **`app/reading-materials/page.tsx`**: Replaced Word List KPI card and type filter dropdown with Grade Level filter dropdown (`All`, `Grade 1` to `Grade 6`); updated data table columns.
+9. **`app/layout.tsx`**: Updated application title to *"Reading Proficiency Assessment System"*.
+10. **`lib/email.ts`**: Updated default email sender name to *"Reading Proficiency Assessment System"*.
+11. **`components/dashboard/dashboard-nav.tsx`**: Updated footer and navigation descriptions to remove Grade 3 restriction.
+12. **`components/dashboard/quick-access.tsx`**: Generalized reading materials card description.
+13. **`components/dashboard/performance-chart.tsx`**: Updated footer note from "DepEd Grade 3 Oral Reading Diagnostic Standards" to "DepEd Oral Reading Diagnostic Standards".
+14. **`components/dashboard/recent-assessments-table.tsx`**: Updated empty state copy to refer generally to pupils.
+15. **`test_reading_materials_module.mjs`**: Updated integration test assertions to validate generic grade level creation and filtering.
+16. **`DEVELOPMENT_LOG.md`**: Recorded Update 8 documentation.
+
+---
+
+### Files Deleted
+
+* None.
+
+---
+
+### Database Changes
+
+* Executed migration in `lib/db.ts`:
+  ```sql
+  UPDATE reading_materials SET type = 'Passage' WHERE type = 'Word List';
+  ```
+* Reading materials now support storing any DepEd elementary grade level (`Grade 1`, `Grade 2`, `Grade 3`, `Grade 4`, `Grade 5`, `Grade 6`).
+
+---
+
+### Verification and Testing Results
+
+* **Automated Integration Tests (`test_reading_materials_module.mjs`)**:
+  - Unauthenticated route & API protection: **PASS**
+  - Authenticated retrieval & aggregate KPI counts: **PASS**
+  - Validation error handling on missing title or content: **PASS**
+  - Reading passage creation & punctuation-independent word count: **PASS**
+  - Multi-grade creation (Grade 4 passage): **PASS**
+  - Single retrieval & updating with real-time word recount: **PASS**
+  - Soft archiving and restoration: **PASS**
+  - Search and grade level filtering (`?grade=Grade 4`, `?grade=Grade 3`): **PASS**
+  - Multi-tenant data isolation between teachers: **PASS**
+  - Authenticated HTML page render: **PASS**
+  - Overall Module 6 Test Score: **47/47 passed (100%)**.
+* **System Regression Tests**:
+  - `test_student_management_module.mjs`: **37/37 passed (100%)**.
+  - `test_classroom_management_module.mjs`: **50/50 passed (100%)**.
+  - `test_parent_management_module.mjs`: **31/31 passed (100%)**.
+  - Total Passing Tests: **165/165 passed across all suites (100%)**.
+* **Production Build (`npm run build`)**:
+  - Successfully compiled via Next.js Turbopack with 0 errors.
+* **Browser Verification**:
+  - Verified `http://localhost:3000/reading-materials` reflects updated title *"Reading Proficiency Assessment System"*.
+  - Verified KPI cards (Total Library, Active, Archived).
+  - Verified Grade Level dropdown filter (Grade 1–6).
+  - Verified Create Reading Passage modal without Word List tab.
+  - Recording: `reading_materials_update_verification_1788695717042.webp`.
+
+---
+
+### Current Status
+
+* **Module 1 (Authentication Module)**: **100% Complete & Operational**.
+* **Module 2 (Teacher Dashboard Module)**: **100% Complete & Operational**.
+* **Module 3 (Parent Management Module)**: **100% Complete & Operational**.
+* **Module 4 (Classroom Management Module)**: **100% Complete & Operational**.
+* **Module 5 (Student Management Module)**: **100% Complete & Operational**.
+* **Module 6 (Reading Materials Module)**: **100% Complete & Operational (Generic Grade Levels, Passages-Only)**.
+* Application builds cleanly (`npm run build`) and runs locally at `http://localhost:3000`.
+
+---
+
+### Deferred Functionality & Next Steps
+
+* **Module 7: Assessment Module** will implement the oral reading assessment setup, audio recording, automated pronunciation scoring, and Phil-IRI oral reading metric calculations when explicitly instructed.

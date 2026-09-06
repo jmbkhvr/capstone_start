@@ -41,7 +41,7 @@ export function QuickAccess() {
       badge: 'Active',
       href: '/classrooms',
       description:
-        'Create Grade 3 classroom sections, view assigned pupils, and configure academic term schedules.',
+        'Create classroom sections, view assigned pupils, and configure academic term schedules.',
       icon: School,
       iconBg: isChild ? 'bg-amber-100' : 'bg-amber-500/10',
       iconColor: isChild ? 'text-amber-700' : 'text-amber-400',
@@ -51,16 +51,17 @@ export function QuickAccess() {
       badge: 'Active',
       href: '/students',
       description:
-        'Register Grade 3 pupils, manage enrollment profiles, and track reading proficiency classifications.',
+        'Register pupils, manage enrollment profiles, and track reading proficiency classifications.',
       icon: Users,
       iconBg: isChild ? 'bg-sky-100' : 'bg-sky-500/10',
       iconColor: isChild ? 'text-sky-700' : 'text-sky-400',
     },
     {
       title: 'Reading Materials',
-      badge: 'Soon',
+      badge: 'Active',
+      href: '/reading-materials',
       description:
-        'Browse DepEd Grade 3 graded reading passages, phoneme exercises, and oral comprehension questions.',
+        'Browse graded reading passages for oral reading assessments across multiple grade levels.',
       icon: BookOpen,
       iconBg: isChild ? 'bg-emerald-100' : 'bg-emerald-500/10',
       iconColor: isChild ? 'text-emerald-700' : 'text-emerald-400',
