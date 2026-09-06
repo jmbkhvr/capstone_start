@@ -103,8 +103,7 @@ export function DashboardNav({
       name: 'Students',
       href: '/students',
       icon: GraduationCap,
-      isImplemented: false,
-      moduleBadge: 'Module 4',
+      isImplemented: true,
       description: 'Manage Grade 3 pupil roster, student profiles, and reading levels.',
     },
     {
@@ -112,7 +111,7 @@ export function DashboardNav({
       href: '/reading-materials',
       icon: BookOpen,
       isImplemented: false,
-      moduleBadge: 'Module 5',
+      moduleBadge: 'Soon',
       description: 'Grade 3 passage library, oral reading texts, and comprehension items.',
     },
     {
@@ -120,7 +119,7 @@ export function DashboardNav({
       href: '/assessments',
       icon: FileCheck2,
       isImplemented: false,
-      moduleBadge: 'Module 6',
+      moduleBadge: 'Soon',
       description: 'Create and administer automated pronunciation and reading tests.',
     },
     {
@@ -128,7 +127,7 @@ export function DashboardNav({
       href: '/results-and-reports',
       icon: BarChart3,
       isImplemented: false,
-      moduleBadge: 'Module 7',
+      moduleBadge: 'Soon',
       description: 'Detailed Phil-IRI diagnostic reports, mispronunciation breakdowns, and exports.',
     },
     {
@@ -136,7 +135,7 @@ export function DashboardNav({
       href: '/monitoring-and-progress',
       icon: TrendingUp,
       isImplemented: false,
-      moduleBadge: 'Module 8',
+      moduleBadge: 'Soon',
       description: 'Longitudinal reading fluency graphs, word error rates, and growth metrics.',
     },
     {
@@ -144,7 +143,7 @@ export function DashboardNav({
       href: '/notifications',
       icon: Bell,
       isImplemented: false,
-      moduleBadge: 'Module 10',
+      moduleBadge: 'Soon',
       description: 'System alerts, student completion notices, and parent messages.',
     },
     {
@@ -152,7 +151,7 @@ export function DashboardNav({
       href: '/profile',
       icon: UserCircle,
       isImplemented: false,
-      moduleBadge: 'Module 11',
+      moduleBadge: 'Soon',
       description: 'Teacher account credentials, school assignment, and system preferences.',
     },
   ];
@@ -422,7 +421,7 @@ export function DashboardNav({
                 </div>
                 <div>
                   <h3 className="text-base font-black">{activeNotice.name}</h3>
-                  <p className="text-xs text-teal-400 font-semibold">{activeNotice.moduleBadge || 'Upcoming Module'}</p>
+                  <p className="text-xs text-teal-400 font-semibold">Upcoming Feature</p>
                 </div>
               </div>
               <button
@@ -437,9 +436,9 @@ export function DashboardNav({
               {activeNotice.description}
               <br />
               <br />
-              This feature is planned for development in{' '}
-              <strong className="text-teal-400">{activeNotice.moduleBadge || 'a future module'}</strong> as part of the
-              Teacher Side Capstone System.
+              This feature is currently in active development for{' '}
+              <strong className="text-teal-400">{activeNotice.name}</strong> as part of the
+              Grade 3 Reading Assessment System.
             </p>
 
             <div className="flex justify-end">

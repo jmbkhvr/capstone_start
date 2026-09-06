@@ -120,7 +120,7 @@ export default function DashboardPage() {
       console.error('Failed to load dashboard data:', err);
       setError(
         err?.response?.data?.error ||
-          'Unable to load dashboard data. Please check your connection and try again.'
+        'Unable to load dashboard data. Please check your connection and try again.'
       );
     } finally {
       // Turn off loading spinner once request resolves or fails.
@@ -160,9 +160,8 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div
-        className={`min-h-screen flex flex-col justify-center items-center p-6 ${
-          isChild ? 'bg-teal-50 text-teal-900' : 'bg-slate-950 text-white'
-        }`}
+        className={`min-h-screen flex flex-col justify-center items-center p-6 ${isChild ? 'bg-teal-50 text-teal-900' : 'bg-slate-950 text-white'
+          }`}
       >
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-10 h-10 text-teal-500 animate-spin" />
@@ -182,14 +181,12 @@ export default function DashboardPage() {
   if (error || !data) {
     return (
       <div
-        className={`min-h-screen flex flex-col justify-center items-center p-6 ${
-          isChild ? 'bg-teal-50 text-teal-900' : 'bg-slate-950 text-white'
-        }`}
+        className={`min-h-screen flex flex-col justify-center items-center p-6 ${isChild ? 'bg-teal-50 text-teal-900' : 'bg-slate-950 text-white'
+          }`}
       >
         <div
-          className={`max-w-md w-full rounded-3xl p-8 border shadow-xl text-center ${
-            isChild ? 'bg-white border-rose-200' : 'bg-slate-900 border-rose-900/50'
-          }`}
+          className={`max-w-md w-full rounded-3xl p-8 border shadow-xl text-center ${isChild ? 'bg-white border-rose-200' : 'bg-slate-900 border-rose-900/50'
+            }`}
         >
           <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-6 h-6" />
@@ -215,11 +212,10 @@ export default function DashboardPage() {
   // --------------------------------------------------------------------------
   return (
     <div
-      className={`min-h-screen flex flex-col lg:flex-row transition-colors duration-300 ${
-        isChild
-          ? 'bg-gradient-to-br from-emerald-50/70 via-teal-50/50 to-amber-50/60 text-slate-900'
-          : 'bg-slate-950 text-slate-100'
-      }`}
+      className={`min-h-screen flex flex-col lg:flex-row transition-colors duration-300 ${isChild
+        ? 'bg-gradient-to-br from-emerald-50/70 via-teal-50/50 to-amber-50/60 text-slate-900'
+        : 'bg-slate-950 text-slate-100'
+        }`}
     >
       {/* -------------------------------------------------------------------- */}
       {/* Left Sidebar Navigation (Section 10)                                 */}
@@ -236,29 +232,26 @@ export default function DashboardPage() {
       {/* Primary Dashboard Content Area                                       */}
       {/* -------------------------------------------------------------------- */}
       <div className="flex-1 flex flex-col min-w-0">
-        
+
         {/* Top Header Bar (Section 4) */}
         <header
-          className={`sticky top-0 z-40 border-b backdrop-blur-md transition-colors ${
-            isChild
-              ? 'bg-white/80 border-teal-200 shadow-xs'
-              : 'bg-slate-900/80 border-slate-800'
-          }`}
+          className={`sticky top-0 z-40 border-b backdrop-blur-md transition-colors ${isChild
+            ? 'bg-white/80 border-teal-200 shadow-xs'
+            : 'bg-slate-900/80 border-slate-800'
+            }`}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             {/* Page Title & Context */}
             <div>
               <h1
-                className={`font-black text-base sm:text-lg tracking-tight ${
-                  isChild ? 'text-teal-950' : 'text-white'
-                }`}
+                className={`font-black text-base sm:text-lg tracking-tight ${isChild ? 'text-teal-950' : 'text-white'
+                  }`}
               >
                 Teacher Dashboard
               </h1>
               <p
-                className={`text-xs font-semibold ${
-                  isChild ? 'text-teal-700' : 'text-slate-400'
-                }`}
+                className={`text-xs font-semibold ${isChild ? 'text-teal-700' : 'text-slate-400'
+                  }`}
               >
                 Grade 3 Oral Reading Assessment Platform
               </p>
@@ -272,11 +265,10 @@ export default function DashboardPage() {
               <div className="relative">
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className={`relative p-2 rounded-2xl border transition-all cursor-pointer ${
-                    isChild
-                      ? 'bg-white hover:bg-teal-50 border-teal-200 text-teal-800'
-                      : 'bg-slate-800/80 hover:bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
-                  }`}
+                  className={`relative p-2 rounded-2xl border transition-all cursor-pointer ${isChild
+                    ? 'bg-white hover:bg-teal-50 border-teal-200 text-teal-800'
+                    : 'bg-slate-800/80 hover:bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
+                    }`}
                   aria-label="View notifications"
                 >
                   <Bell className="w-4 h-4" />
@@ -287,11 +279,10 @@ export default function DashboardPage() {
                 {/* Notifications Popover Panel */}
                 {showNotifications && (
                   <div
-                    className={`absolute right-0 mt-2 w-80 rounded-3xl p-4 shadow-2xl border z-50 animate-fadeIn ${
-                      isChild
-                        ? 'bg-white border-teal-200 text-slate-800'
-                        : 'bg-slate-900 border-slate-700 text-white'
-                    }`}
+                    className={`absolute right-0 mt-2 w-80 rounded-3xl p-4 shadow-2xl border z-50 animate-fadeIn ${isChild
+                      ? 'bg-white border-teal-200 text-slate-800'
+                      : 'bg-slate-900 border-slate-700 text-white'
+                      }`}
                   >
                     <div className="flex items-center justify-between pb-3 border-b border-inherit mb-3">
                       <div className="flex items-center gap-2">
@@ -310,18 +301,17 @@ export default function DashboardPage() {
 
                     <div className="space-y-2">
                       <div
-                        className={`p-3 rounded-2xl text-xs border ${
-                          isChild
-                            ? 'bg-teal-50/70 border-teal-200'
-                            : 'bg-slate-800/60 border-slate-700'
-                        }`}
+                        className={`p-3 rounded-2xl text-xs border ${isChild
+                          ? 'bg-teal-50/70 border-teal-200'
+                          : 'bg-slate-800/60 border-slate-700'
+                          }`}
                       >
                         <p className="font-bold text-teal-400 mb-1">
-                          Welcome to Module 2!
+                          Welcome to Teacher Dashboard
                         </p>
                         <p className="text-slate-400 leading-relaxed text-[11px]">
-                          Your Teacher Dashboard is active. You can now monitor class
-                          statistics and prepare for upcoming classroom management tools.
+                          Your dashboard is active. You can monitor class
+                          statistics, manage student rosters, and prepare for reading assessments.
                         </p>
                       </div>
                     </div>
@@ -331,16 +321,14 @@ export default function DashboardPage() {
 
               {/* Teacher Avatar Badge */}
               <div
-                className={`hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-2xl border ${
-                  isChild
-                    ? 'bg-white border-teal-200 text-slate-800 shadow-xs'
-                    : 'bg-slate-800/80 border-slate-700/60 text-white'
-                }`}
+                className={`hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-2xl border ${isChild
+                  ? 'bg-white border-teal-200 text-slate-800 shadow-xs'
+                  : 'bg-slate-800/80 border-slate-700/60 text-white'
+                  }`}
               >
                 <div
-                  className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs ${
-                    isChild ? 'bg-teal-500 text-white' : 'bg-teal-500/20 text-teal-300'
-                  }`}
+                  className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs ${isChild ? 'bg-teal-500 text-white' : 'bg-teal-500/20 text-teal-300'
+                    }`}
                 >
                   {data.teacher.fullName.charAt(0).toUpperCase()}
                 </div>
@@ -349,9 +337,8 @@ export default function DashboardPage() {
                     {data.teacher.fullName}
                   </p>
                   <p
-                    className={`text-[10px] ${
-                      isChild ? 'text-teal-700' : 'text-slate-400'
-                    }`}
+                    className={`text-[10px] ${isChild ? 'text-teal-700' : 'text-slate-400'
+                      }`}
                   >
                     {data.teacher.teacherId}
                   </p>
@@ -365,36 +352,25 @@ export default function DashboardPage() {
         {/* Main Dashboard Body Container                                      */}
         {/* ------------------------------------------------------------------ */}
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-          
+
           {/* ---------------------------------------------------------------- */}
           {/* Section 5: Welcome Hero Banner with Teacher Info                 */}
           {/* ---------------------------------------------------------------- */}
           <section
-            className={`rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden transition-all duration-300 border ${
-              isChild
-                ? 'bg-gradient-to-r from-amber-100/90 via-teal-100/90 to-emerald-100/90 border-teal-200/80 text-slate-900 shadow-teal-900/5'
-                : 'bg-gradient-to-r from-teal-950/40 via-slate-900 to-slate-900 border-teal-500/30 text-white'
-            }`}
+            className={`rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden transition-all duration-300 border ${isChild
+              ? 'bg-gradient-to-r from-amber-100/90 via-teal-100/90 to-emerald-100/90 border-teal-200/80 text-slate-900 shadow-teal-900/5'
+              : 'bg-gradient-to-r from-teal-950/40 via-slate-900 to-slate-900 border-teal-500/30 text-white'
+              }`}
           >
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>
-                <div
-                  className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold mb-3 ${
-                    isChild
-                      ? 'bg-white/90 text-teal-900 border border-teal-300 shadow-xs'
-                      : 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
-                  }`}
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Module 2: Teacher Dashboard Active</span>
-                </div>
+
                 <h2 className="text-2xl sm:text-3xl font-black">
                   {getGreeting()}, {data.teacher.fullName}! 👋
                 </h2>
                 <p
-                  className={`text-xs sm:text-sm mt-2 max-w-2xl leading-relaxed ${
-                    isChild ? 'text-slate-700 font-medium' : 'text-slate-300'
-                  }`}
+                  className={`text-xs sm:text-sm mt-2 max-w-2xl leading-relaxed ${isChild ? 'text-slate-700 font-medium' : 'text-slate-300'
+                    }`}
                 >
                   Here is an overview of your Grade 3 pupils, active classrooms, and
                   recent reading assessment progress.
@@ -404,11 +380,10 @@ export default function DashboardPage() {
               {/* Quick Status Pill */}
               <div className="flex shrink-0">
                 <div
-                  className={`p-4 rounded-2xl text-xs space-y-1.5 border min-w-[210px] ${
-                    isChild
-                      ? 'bg-white/90 border-teal-200 text-slate-800 shadow-sm'
-                      : 'bg-slate-800/80 border-slate-700/60 text-slate-300'
-                  }`}
+                  className={`p-4 rounded-2xl text-xs space-y-1.5 border min-w-[210px] ${isChild
+                    ? 'bg-white/90 border-teal-200 text-slate-800 shadow-sm'
+                    : 'bg-slate-800/80 border-slate-700/60 text-slate-300'
+                    }`}
                 >
                   <p className="text-[10px] uppercase font-bold text-teal-400 tracking-wider">
                     Assigned Account
@@ -431,7 +406,7 @@ export default function DashboardPage() {
                 title="Total Students"
                 value={data.summary.totalStudents}
                 subtitle="Enrolled pupils in your Grade 3 classes"
-                emptyHint="No pupils have been enrolled yet. Add students in Module 4."
+                emptyHint="No pupils have been enrolled yet. Add students in Student Management."
                 icon={Users}
                 iconBgClass={isChild ? 'bg-sky-100' : 'bg-sky-500/10'}
                 iconColorClass={isChild ? 'text-sky-700' : 'text-sky-400'}
@@ -443,7 +418,7 @@ export default function DashboardPage() {
                 title="Total Classes"
                 value={data.summary.totalClasses}
                 subtitle="Grade 3 sections created & managed"
-                emptyHint="No classrooms created yet. Set up sections in Module 3."
+                emptyHint="No classrooms created yet. Set up sections in Classroom Management."
                 icon={School}
                 iconBgClass={isChild ? 'bg-amber-100' : 'bg-amber-500/10'}
                 iconColorClass={isChild ? 'text-amber-700' : 'text-amber-400'}
@@ -455,7 +430,7 @@ export default function DashboardPage() {
                 title="Assessments"
                 value={data.summary.totalAssessments}
                 subtitle="Reading tests conducted this term"
-                emptyHint="No reading assessments recorded yet. Administer tests in Module 6."
+                emptyHint="No reading assessments recorded yet. Administer tests in Assessments."
                 icon={FileCheck2}
                 iconBgClass={isChild ? 'bg-emerald-100' : 'bg-emerald-500/10'}
                 iconColorClass={isChild ? 'text-emerald-700' : 'text-emerald-400'}

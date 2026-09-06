@@ -192,7 +192,7 @@ export function PerformanceChart({ data }: PerformanceChartProps) {
               </div>
               <p className="text-xs text-slate-400 leading-relaxed">
                 Class averages will dynamically render here once pupils complete automated
-                pronunciation and reading evaluations in upcoming modules.
+                pronunciation and reading evaluations.
               </p>
             </div>
           </div>

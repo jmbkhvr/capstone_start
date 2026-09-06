@@ -236,7 +236,7 @@ export function ClassroomDetailsModal({
             </div>
           </div>
 
-          {/* Module 5 Student Assignment Note */}
+          {/* Student Assignment Note */}
           <div
             className={`p-3.5 rounded-xl border flex items-start gap-2.5 text-xs ${
               isChild
@@ -246,10 +246,10 @@ export function ClassroomDetailsModal({
           >
             <Info className="w-4 h-4 shrink-0 mt-0.5 text-blue-500" />
             <div>
-              <p className="font-semibold">Student Management Notice</p>
+              <p className="font-semibold">Student Roster Notice</p>
               <p className="mt-0.5 opacity-90 leading-relaxed">
                 Student roster assignment, enrollment, and individual pupil profiles
-                will be managed in <strong>Module 5 (Student Management Module)</strong>.
+                can be managed in the <strong className="text-teal-400">Students</strong> section.
               </p>
             </div>
           </div>
@@ -278,7 +278,9 @@ export function ClassroomDetailsModal({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-200/50 dark:border-slate-800">
+          <div className={`flex items-center justify-between pt-4 border-t ${
+            isChild ? 'border-slate-200/50' : 'border-slate-800'
+          }`}>
             {/* Archive / Restore Button */}
             <button
               id="details-archive-btn"
