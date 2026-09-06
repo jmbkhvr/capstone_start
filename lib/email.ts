@@ -47,14 +47,14 @@ export async function sendPasswordResetEmail(
 
       // Construct email message body.
       const mailOptions = {
-        from: process.env.SMTP_FROM || '"Grade 3 Reading Assessment System" <noreply@reading-assessment.edu.ph>',
+        from: process.env.SMTP_FROM || '"Reading Proficiency Assessment System" <noreply@reading-assessment.edu.ph>',
         to: toEmail,
-        subject: 'Password Reset Request - Grade 3 Reading Assessment System',
+        subject: 'Password Reset Request - Reading Proficiency Assessment System',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #0f172a; color: #f8fafc; border-radius: 12px;">
             <h2 style="color: #2dd4bf; margin-top: 0;">Password Reset Request</h2>
             <p>Hello,</p>
-            <p>You requested a password reset for your Teacher Account on the <strong>Grade 3 Reading Proficiency Assessment System</strong>.</p>
+            <p>You requested a password reset for your Teacher Account on the <strong>Reading Proficiency Assessment System</strong>.</p>
             <p>Please click the button below to set a new password. This link is valid for <strong>1 hour</strong>.</p>
             <div style="text-align: center; margin: 30px 0;">
               <a href="${resetUrl}" style="background-color: #0d9488; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Reset Password</a>
