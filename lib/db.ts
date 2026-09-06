@@ -122,6 +122,37 @@ function getDatabase(): Database.Database {
       FOREIGN KEY (teacherId) REFERENCES teachers(id) ON DELETE CASCADE,
       FOREIGN KEY (parentId) REFERENCES parents(id) ON DELETE SET NULL
     );
+
+    -- READING MATERIALS TABLE (MODULE 6: READING MATERIALS)
+    -- Stores teacher-created reading passages used as reference texts for oral
+    -- reading assessments. Supports multiple grade levels (Grade 1 through Grade 6).
+    -- Each reading material belongs to an authorized teacher (multi-tenant isolation).
+    -- Soft archiving (status = 'Archived') is enforced to safeguard future assessment metrics.
+    -- The 'type' column is retained for backward compatibility but always set to 'Passage'.
+    CREATE TABLE IF NOT EXISTS reading_materials (
+      id TEXT PRIMARY KEY,
+      teacherId TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      type TEXT NOT NULL DEFAULT 'Passage',
+      content TEXT NOT NULL,
+      wordCount INTEGER NOT NULL DEFAULT 0,
+      difficulty TEXT NOT NULL DEFAULT 'Easy',
+      gradeLevel TEXT NOT NULL DEFAULT 'Grade 3',
+      status TEXT NOT NULL DEFAULT 'Active',
+      createdAt TEXT DEFAULT (datetime('now')),
+      updatedAt TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (teacherId) REFERENCES teachers(id) ON DELETE CASCADE
+    );
+  `);
+
+  // --------------------------------------------------------------------------
+  // DATA MIGRATION: Convert any legacy Word List records to Passage type.
+  // --------------------------------------------------------------------------
+  // Word Lists are no longer supported as a material type. Any existing Word List
+  // records are safely converted to Passage type so they remain accessible.
+  dbInstance.exec(`
+    UPDATE reading_materials SET type = 'Passage' WHERE type = 'Word List';
   `);
 
   return dbInstance;

@@ -90,29 +90,28 @@ export function DashboardNav({
       href: '/parents',
       icon: Users,
       isImplemented: true,
-      description: 'Review and approve parent registration requests for Grade 3 pupils.',
+      description: 'Review and approve parent registration requests for pupils.',
     },
     {
       name: 'Classrooms',
       href: '/classrooms',
       icon: School,
       isImplemented: true,
-      description: 'Create Grade 3 class sections, schedule sessions, and assign students.',
+      description: 'Create class sections, schedule sessions, and assign students.',
     },
     {
       name: 'Students',
       href: '/students',
       icon: GraduationCap,
       isImplemented: true,
-      description: 'Manage Grade 3 pupil roster, student profiles, and reading levels.',
+      description: 'Manage pupil roster, student profiles, and reading levels.',
     },
     {
       name: 'Reading Materials',
       href: '/reading-materials',
       icon: BookOpen,
-      isImplemented: false,
-      moduleBadge: 'Soon',
-      description: 'Grade 3 passage library, oral reading texts, and comprehension items.',
+      isImplemented: true,
+      description: 'Reading passage library, oral reading texts, and assessment content.',
     },
     {
       name: 'Assessments',
@@ -218,7 +217,7 @@ export function DashboardNav({
                   isChild ? 'text-teal-950 font-black' : 'text-white'
                 }`}
               >
-                Grade 3 Reading
+                Reading Assessment
               </h2>
               <p
                 className={`text-xs font-semibold ${
@@ -438,7 +437,7 @@ export function DashboardNav({
               <br />
               This feature is currently in active development for{' '}
               <strong className="text-teal-400">{activeNotice.name}</strong> as part of the
-              Grade 3 Reading Assessment System.
+              Reading Proficiency Assessment System.
             </p>
 
             <div className="flex justify-end">
