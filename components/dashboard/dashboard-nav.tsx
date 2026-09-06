@@ -96,8 +96,7 @@ export function DashboardNav({
       name: 'Classrooms',
       href: '/classrooms',
       icon: School,
-      isImplemented: false,
-      moduleBadge: 'Module 3',
+      isImplemented: true,
       description: 'Create Grade 3 class sections, schedule sessions, and assign students.',
     },
     {

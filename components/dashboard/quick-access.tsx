@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { School, Users, BookOpen, FileCheck2, ArrowRight, Info, X } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
 
@@ -9,16 +10,10 @@ import { useTheme } from '@/lib/theme-context';
 // ============================================================================
 // What this component does:
 // Renders the Quick Access shortcuts specified in Section 9:
-// - [ Manage Classes ]
+// - [ Manage Classes ] (Navigates to /classrooms - Module 4)
 // - [ Manage Students ]
 // - [ Reading Materials ]
 // - [ Assessments ]
-//
-// Compliance:
-// Complies with Section 9: Does NOT create fake empty pages or dead 404 links.
-// Since these modules belong to subsequent development phases, clicking these
-// actions triggers an informative notification explaining upcoming module
-// schedules, keeping the interface responsive and clear.
 // ============================================================================
 
 interface QuickAction {
@@ -28,9 +23,11 @@ interface QuickAction {
   icon: React.ElementType;
   iconBg: string;
   iconColor: string;
+  href?: string;
 }
 
 export function QuickAccess() {
+  const router = useRouter();
   const { theme } = useTheme();
   const isChild = theme === 'child';
 
@@ -41,7 +38,8 @@ export function QuickAccess() {
   const actions: QuickAction[] = [
     {
       title: 'Manage Classes',
-      module: 'Module 3',
+      module: 'Module 4',
+      href: '/classrooms',
       description:
         'Create Grade 3 classroom sections, view assigned pupils, and configure academic term schedules.',
       icon: School,
@@ -50,7 +48,7 @@ export function QuickAccess() {
     },
     {
       title: 'Manage Students',
-      module: 'Module 4',
+      module: 'Module 5',
       description:
         'Register Grade 3 pupils, manage enrollment profiles, and track reading proficiency classifications.',
       icon: Users,
@@ -120,7 +118,13 @@ export function QuickAccess() {
           return (
             <button
               key={action.title}
-              onClick={() => setActiveNotice(action)}
+              onClick={() => {
+                if (action.href) {
+                  router.push(action.href);
+                } else {
+                  setActiveNotice(action);
+                }
+              }}
               className={`p-4 rounded-2xl border text-left transition-all duration-200 group flex flex-col justify-between hover:shadow-md cursor-pointer ${
                 isChild
                   ? 'bg-slate-50/80 hover:bg-teal-50/60 border-slate-200 hover:border-teal-300'
