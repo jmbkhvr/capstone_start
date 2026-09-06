@@ -62,6 +62,9 @@ model Teacher {
 
   // Relation to classrooms managed by this teacher (Module 4).
   classrooms     Classroom[]
+
+  // Relation to students managed by this teacher (Module 5).
+  students       Student[]
 }
 
 // ============================================================================
@@ -154,6 +157,9 @@ model Parent {
 
   // Relation to Teacher model.
   teacher         Teacher? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+
+  // Relation to students linked to this parent (Module 5).
+  students        Student[]
 }
 
 // ============================================================================
@@ -201,5 +207,68 @@ model Classroom {
 
   // Relation to the owning Teacher account.
   teacher     Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  // Relation to students enrolled in this classroom (Module 5).
+  students    Student[]
 }
+
+// ============================================================================
+// STUDENT MODEL (MODULE 5: STUDENT MANAGEMENT)
+// ============================================================================
+// What this model does:
+// Represents a Grade 3 pupil profile managed by a teacher.
+// Stores pupil's name (first, middle, last, and full name), grade level,
+// assigned classroom ID, teacher ID, optional linked parent ID, status, and timestamps.
+//
+// Soft Deactivation Note:
+// Uses soft deactivation (status = 'Inactive') instead of permanent deletion to
+// safeguard historical oral pronunciation evaluations and Phil-IRI diagnostic metrics.
+// ============================================================================
+model Student {
+  // Unique internal database ID generated as a UUID string.
+  id          String    @id @default(uuid())
+
+  // Pupil's first name.
+  firstName   String
+
+  // Pupil's middle name (optional).
+  middleName  String?
+
+  // Pupil's last name / surname.
+  lastName    String
+
+  // Full composite name for fast queries and table sorting.
+  fullName    String
+
+  // Grade level of pupil (defaults to target Grade 3).
+  gradeLevel  String    @default("Grade 3")
+
+  // Foreign key pointing to the classroom section the pupil is enrolled in.
+  classroomId String
+
+  // Foreign key pointing to the teacher who manages this pupil profile.
+  teacherId   String
+
+  // Optional foreign key pointing to the pupil's approved parent/guardian account.
+  parentId    String?
+
+  // Account status: 'Active' or 'Inactive'.
+  status      String    @default("Active")
+
+  // Creation timestamp recorded when the pupil record was created.
+  createdAt   DateTime  @default(now())
+
+  // Timestamp updated automatically whenever student record changes.
+  updatedAt   DateTime  @updatedAt
+
+  // Relation to Classroom section.
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+
+  // Relation to managing Teacher.
+  teacher     Teacher   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  // Relation to linked Parent account (optional).
+  parent      Parent?   @relation(fields: [parentId], references: [id], onDelete: SetNull)
+}
+
 

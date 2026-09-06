@@ -213,7 +213,11 @@ export function CreateClassroomModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Error Banner */}
           {errorMessage && (
-            <div className="flex items-start gap-3 p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl dark:bg-red-950/30 dark:border-red-900/50 dark:text-red-300 animate-fadeIn">
+            <div className={`flex items-start gap-3 p-3 text-sm border rounded-xl animate-fadeIn ${
+              isChild
+                ? 'text-red-700 bg-red-50 border-red-200'
+                : 'text-red-300 bg-red-950/30 border-red-900/50'
+            }`}>
               <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
               <span>{errorMessage}</span>
             </div>
@@ -355,7 +359,9 @@ export function CreateClassroomModal({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200/50 dark:border-slate-800">
+          <div className={`flex items-center justify-end gap-3 pt-3 border-t ${
+            isChild ? 'border-slate-200/50' : 'border-slate-800'
+          }`}>
             <button
               type="button"
               onClick={handleClose}

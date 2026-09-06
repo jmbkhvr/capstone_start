@@ -283,10 +283,6 @@ export default function ClassroomManagementPage() {
             <div>
               <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
                 <span>Teacher Portal</span>
-                <span>•</span>
-                <span className={isChild ? 'text-teal-700 font-bold' : 'text-emerald-400'}>
-                  Module 4
-                </span>
               </div>
               <h1
                 className={`font-black text-base sm:text-lg tracking-tight ${
@@ -401,9 +397,15 @@ export default function ClassroomManagementPage() {
             </div>
 
             {/* Filter Controls Row: Status Tabs & Search Input */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6 pt-6 border-t border-slate-200/60 dark:border-slate-800">
+            <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6 pt-6 border-t ${
+              isChild ? 'border-slate-200/60' : 'border-slate-800'
+            }`}>
               {/* Status Filter Tabs */}
-              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50 self-start">
+              <div className={`flex items-center gap-1.5 p-1 rounded-xl border self-start transition-colors ${
+                isChild
+                  ? 'bg-slate-100 border-slate-200'
+                  : 'bg-slate-900/90 border-slate-800'
+              }`}>
                 {(['All', 'Active', 'Archived'] as const).map((tab) => {
                   const isActive = activeTab === tab;
                   const count =
@@ -422,9 +424,11 @@ export default function ClassroomManagementPage() {
                       className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                         isActive
                           ? isChild
-                            ? 'bg-white text-amber-900 shadow-sm'
-                            : 'bg-slate-900 text-emerald-400 shadow-md border border-slate-700'
-                          : 'text-slate-400 hover:text-slate-200'
+                            ? 'bg-white text-amber-900 shadow-sm font-bold'
+                            : 'bg-emerald-600 text-white shadow-sm font-bold'
+                          : isChild
+                            ? 'text-slate-600 hover:text-slate-900'
+                            : 'text-slate-400 hover:text-slate-200'
                       }`}
                     >
                       <span>{tab}</span>
@@ -432,9 +436,11 @@ export default function ClassroomManagementPage() {
                         className={`px-1.5 py-0.5 rounded-md text-[10px] ${
                           isActive
                             ? isChild
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-emerald-500/20 text-emerald-300'
-                            : 'bg-slate-200 dark:bg-slate-700 text-slate-400'
+                              ? 'bg-amber-100 text-amber-800 font-bold'
+                              : 'bg-white/20 text-white font-bold'
+                            : isChild
+                              ? 'bg-slate-200 text-slate-600'
+                              : 'bg-slate-800 text-slate-400 border border-slate-700/60'
                         }`}
                       >
                         {count}
@@ -549,7 +555,7 @@ export default function ClassroomManagementPage() {
                       <th className="px-6 py-4 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200/50 dark:divide-slate-800/60 text-sm">
+                  <tbody className={`divide-y text-sm ${isChild ? 'divide-slate-200/50' : 'divide-slate-800/60'}`}>
                     {classrooms.map((classroom) => {
                       const isArchived = classroom.status === 'Archived';
 

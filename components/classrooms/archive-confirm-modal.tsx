@@ -153,7 +153,9 @@ export function ArchiveConfirmModal({
           </p>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200/50 dark:border-slate-800">
+          <div className={`flex items-center justify-end gap-3 pt-3 border-t ${
+            isChild ? 'border-slate-200/50' : 'border-slate-800'
+          }`}>
             <button
               type="button"
               onClick={onClose}

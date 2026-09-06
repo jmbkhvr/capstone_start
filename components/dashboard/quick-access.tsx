@@ -18,7 +18,7 @@ import { useTheme } from '@/lib/theme-context';
 
 interface QuickAction {
   title: string;
-  module: string;
+  badge: string;
   description: string;
   icon: React.ElementType;
   iconBg: string;
@@ -34,11 +34,11 @@ export function QuickAccess() {
   // State to track which action item modal notice is currently shown
   const [activeNotice, setActiveNotice] = useState<QuickAction | null>(null);
 
-  // List of four standard quick action buttons from Section 9
+  // List of four standard quick action buttons
   const actions: QuickAction[] = [
     {
       title: 'Manage Classes',
-      module: 'Module 4',
+      badge: 'Active',
       href: '/classrooms',
       description:
         'Create Grade 3 classroom sections, view assigned pupils, and configure academic term schedules.',
@@ -48,7 +48,8 @@ export function QuickAccess() {
     },
     {
       title: 'Manage Students',
-      module: 'Module 5',
+      badge: 'Active',
+      href: '/students',
       description:
         'Register Grade 3 pupils, manage enrollment profiles, and track reading proficiency classifications.',
       icon: Users,
@@ -57,7 +58,7 @@ export function QuickAccess() {
     },
     {
       title: 'Reading Materials',
-      module: 'Module 5',
+      badge: 'Soon',
       description:
         'Browse DepEd Grade 3 graded reading passages, phoneme exercises, and oral comprehension questions.',
       icon: BookOpen,
@@ -66,7 +67,7 @@ export function QuickAccess() {
     },
     {
       title: 'Assessments',
-      module: 'Module 6',
+      badge: 'Soon',
       description:
         'Launch speech-recognition oral assessments, evaluate pronunciation accuracy, and track reading speeds.',
       icon: FileCheck2,
@@ -140,12 +141,16 @@ export function QuickAccess() {
                   </div>
                   <span
                     className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
-                      isChild
+                      action.badge === 'Active'
+                        ? isChild
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                        : isChild
                         ? 'bg-slate-200/80 text-slate-700'
                         : 'bg-slate-800 text-slate-400'
                     }`}
                   >
-                    {action.module}
+                    {action.badge}
                   </span>
                 </div>
 
@@ -173,7 +178,7 @@ export function QuickAccess() {
                     : 'border-slate-800/80 text-teal-400 group-hover:text-teal-300'
                 }`}
               >
-                <span>Launch Tool</span>
+                <span>{action.href ? 'Launch Tool' : 'Coming Soon'}</span>
                 <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
               </div>
             </button>
@@ -182,7 +187,7 @@ export function QuickAccess() {
       </div>
 
       {/* -------------------------------------------------------------------- */}
-      {/* Informative Modal Notice for Upcoming Modules                       */}
+      {/* Informative Modal Notice for Upcoming Features                      */}
       {/* -------------------------------------------------------------------- */}
       {activeNotice && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
@@ -202,7 +207,7 @@ export function QuickAccess() {
                 </div>
                 <div>
                   <h3 className="text-base font-black">{activeNotice.title}</h3>
-                  <p className="text-xs text-teal-400 font-semibold">{activeNotice.module} • Upcoming Feature</p>
+                  <p className="text-xs text-teal-400 font-semibold">Upcoming Feature</p>
                 </div>
               </div>
               <button
@@ -217,8 +222,8 @@ export function QuickAccess() {
               {activeNotice.description}
               <br />
               <br />
-              This module will be developed in the scheduled Capstone development phase for{' '}
-              <strong className="text-teal-400">{activeNotice.title} ({activeNotice.module})</strong>.
+              This feature is currently in active development for{' '}
+              <strong className="text-teal-400">{activeNotice.title}</strong> and will be available in an upcoming update.
             </p>
 
             <div className="flex justify-end">

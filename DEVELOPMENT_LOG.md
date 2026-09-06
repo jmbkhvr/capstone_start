@@ -730,7 +730,142 @@ Executed automated test suite (`test_password_reset.mjs`) covering all 8 passwor
 
 ### Deferred Functionality & Next Steps
 
-* **Module 5: Student Management Module** will implement student enrollment, pupil profiles, and classroom student assignment when instructed.
+* None. All planned Module 4 features are fully operational.
+
+---
+
+## Update 6 - 04:14 PM September 6, 2026
+
+### Update Information
+
+* **Update Number**: Update 6
+* **Exact Time**: 04:14 PM
+* **Exact Date**: September 6, 2026
+* **What Was Worked On**: 
+  Complete implementation and end-to-end verification of **Module 5: Student Management Module** (Grade 3 Pupil Enrollment, Profile Management, Classroom Section Transfer, Linked Parent Association, Soft Deactivation and Restoration preserving Phil-IRI Reading Assessment Data, Roster Search & Classroom/Status Filtering, Responsive Data Table, and Multi-Tenant Security Isolation).
+* **Why It Was Done**: 
+  To provide elementary school teachers with a dedicated management interface for Grade 3 pupils enrolled in their classrooms. Pupils are tracked with their full name, grade level (strictly Grade 3 focus), assigned classroom section, and linked parent contact. Soft deactivation is enforced so that historical oral reading scores, speech recordings, and Phil-IRI diagnostic metrics are never permanently destroyed.
+
+---
+
+### Files Created
+
+1. **`components/students/add-student-modal.tsx`**: Modal dialog component for enrolling a new Grade 3 pupil. Validates first and last names, links the pupil to the teacher's active classroom sections, and supports optional linkage to approved parent accounts.
+2. **`components/students/edit-student-modal.tsx`**: Pre-populated modal form allowing teachers to update student names, assigned classroom section, and linked parent guardian.
+3. **`components/students/student-details-modal.tsx`**: Comprehensive student detail viewer showing academic placement, section info, parent guardian contacts, enrollment date, and quick action shortcuts.
+4. **`components/students/move-student-modal.tsx`**: Interactive transfer modal enabling teachers to safely move a pupil from their current classroom section to another active section while verifying teacher ownership and avoiding duplicate naming.
+5. **`components/students/deactivate-confirm-modal.tsx`**: Confirmation modal with Data Preservation Guarantee banner, allowing teachers to soft-deactivate pupils from active queues or restore them back to active roster.
+6. **`app/students/page.tsx`**: Main Student Management page UI. Includes top metric summary cards (Total Pupils, Active for Reading, Inactive Records), live search bar, classroom dropdown filter, status tabs (`All`, `Active`, `Inactive`) with badge counts, responsive table with pupil avatar initials, actions, and toast notifications.
+7. **`app/api/students/route.ts`**: Backend GET (list students with search, classroom, and status filtering plus teacher classroom/parent options and status counts) and POST (create pupil with duplicate enrollment validation).
+8. **`app/api/students/[id]/route.ts`**: Backend GET (single pupil details with joined classroom and parent) and PUT (update pupil details with conflict checking).
+9. **`app/api/students/[id]/classroom/route.ts`**: Backend PATCH endpoint for moving a pupil to another classroom owned by the teacher.
+10. **`app/api/students/[id]/status/route.ts`**: Backend PATCH endpoint for toggling pupil status between 'Active' and 'Inactive' without data loss.
+11. **`test_student_management_module.mjs`**: Comprehensive automated test suite with 37 integration tests covering authentication, validations, duplicate prevention, updates, classroom transfers, soft deactivation/restoration, filtering, and cross-teacher multi-tenant isolation.
+
+---
+
+### Files Modified
+
+1. **`lib/db.ts`**: Created SQLite `students` table with primary key `id`, names (`firstName`, `middleName`, `lastName`, `fullName`), `gradeLevel` ('Grade 3'), `classroomId`, `teacherId`, `parentId`, `status` ('Active' | 'Inactive'), timestamps (`createdAt`, `updatedAt`), and foreign keys referencing `classrooms.id`, `teachers.id`, and `parents.id`.
+2. **`prisma/schema.prisma`**: Defined the `Student` Prisma model and added relational bindings (`students Student[]`) to `Teacher`, `Classroom`, and `Parent` models.
+3. **`components/dashboard/dashboard-nav.tsx`**: Activated the `Students` sidebar navigation item (`isImplemented: true`, removed pending badge) and updated `Reading Materials` to `Module 6`.
+4. **`components/dashboard/quick-access.tsx`**: Updated the `Manage Students` quick access card to navigate directly to `/students` and updated future module badges.
+5. **`DEVELOPMENT_LOG.md`**: Appended Update 6 documentation.
+
+---
+
+### Files Deleted
+
+* None.
+
+---
+
+### Important Code Changes
+
+* **Database Architecture**: Implemented the `students` table in SQLite with strict foreign keys to `teachers`, `classrooms`, and `parents`.
+* **Duplicate Detection**: Backend validates that no two active students with identical first and last names can be enrolled in the same classroom under the same teacher.
+* **Soft Deactivation vs Hard Deletion**: Permanent row deletion is strictly prevented. Inactive students are preserved in SQLite so historical reading assessments, Phil-IRI diagnostic metrics, and audio recordings remain 100% intact.
+* **Multi-Tenant Security Scoping**: All API routes (`GET`, `POST`, `PUT`, `PATCH`) explicitly scope queries using `teacherId = teacher.id`. Cross-teacher access attempts return HTTP 403 or 404.
+* **Responsive Layout Design**: Built `app/students/page.tsx` using `min-h-screen flex flex-col lg:flex-row` and `<div className="flex-1 flex flex-col min-w-0">` to guarantee zero top-spacing visual glitches across all screen sizes.
+* **Code Commenting Discipline**: Every block of code created or modified includes meaningful explanatory comments describing its exact purpose.
+
+---
+
+### Database Changes
+
+* **Table Created**: `students`
+  * `id TEXT PRIMARY KEY`
+  * `firstName TEXT NOT NULL`
+  * `middleName TEXT`
+  * `lastName TEXT NOT NULL`
+  * `fullName TEXT NOT NULL`
+  * `gradeLevel TEXT NOT NULL DEFAULT 'Grade 3'`
+  * `classroomId TEXT NOT NULL`
+  * `teacherId TEXT NOT NULL`
+  * `parentId TEXT`
+  * `status TEXT NOT NULL DEFAULT 'Active'`
+  * `createdAt TEXT DEFAULT (datetime('now'))`
+  * `updatedAt TEXT DEFAULT (datetime('now'))`
+  * Foreign Keys: `classroomId` -> `classrooms(id)`, `teacherId` -> `teachers(id)`, `parentId` -> `parents(id)`.
+
+---
+
+### Verification and Testing Results
+
+* **Automated Tests Executed (`test_student_management_module.mjs`)**:
+  1. Unauthenticated `GET /api/students` returns HTTP 401 Unauthorized (**PASS**).
+  2. Unauthenticated visit to `/students` redirects to `/login` (**PASS**).
+  3. Authenticated `GET /api/students` returns pupil roster and status counts (**PASS**).
+  4. Input validations on `POST /api/students` (missing first name, last name, classroom) return HTTP 400 (**PASS**).
+  5. Successful pupil creation (`POST /api/students`) returns HTTP 201 Created (**PASS**).
+  6. Duplicate pupil enrollment in same classroom returns HTTP 409 Conflict (**PASS**).
+  7. Single pupil retrieval (`GET /api/students/[id]`) returns full details (**PASS**).
+  8. Update pupil details (`PUT /api/students/[id]`) (**PASS**).
+  9. Classroom transfer (`PATCH /api/students/[id]/classroom`) reassigns section (**PASS**).
+  10. Attempting transfer to current classroom returns HTTP 400 (**PASS**).
+  11. Soft deactivation (`PATCH /api/students/[id]/status`) sets status to `'Inactive'` (**PASS**).
+  12. Pupil restoration sets status back to `'Active'` (**PASS**).
+  13. Search query filtering locates pupil by name (**PASS**).
+  14. Classroom filter returns only pupils in selected section (**PASS**).
+  15. Multi-tenant isolation: Teacher B cannot view, edit, or move Teacher A's pupils (**PASS**).
+  16. Authenticated HTML page render for `/students` returns HTTP 200 OK (**PASS**).
+  - Overall automated result: **37/37 tests passed (100%)**.
+
+* **Regression Tests Executed**:
+  - `test_classroom_management_module.mjs`: **50/50 passed (100%)**.
+  - `test_parent_management_module.mjs`: **31/31 passed (100%)**.
+  - Next.js Production Build (`npm run build`): **Compiled successfully in 1.8s, 0 TypeScript/lint errors**.
+
+* **Visual & Interactive Browser Subagent Testing**:
+  - Logged into Teacher Portal via `http://localhost:3000/login`.
+  - Navigated to `/students` via sidebar link.
+  - Verified clean layout with top metric cards, filter tabs, and responsive table.
+  - Enrolled new pupil "Jose Protacio Rizal", assigned to Grade 3 section and linked to parent "Corazon Aquino".
+  - Verified details modal preview showing Phil-IRI metrics and parent info.
+  - Transferred pupil between active classroom sections.
+  - Edited pupil profile (middle name updated to Mercado).
+  - Deactivated pupil and verified Data Preservation guarantee modal.
+  - Filtered by Inactive tab and restored pupil back to Active status.
+  - Video recording generated: `student_mgmt_demo_1788681281431.webp`.
+  - Status: **PASSED (100%)**.
+
+---
+
+### Current Status
+
+* **Module 1 (Authentication Module)**: **100% Complete & Operational**.
+* **Module 2 (Teacher Dashboard Module)**: **100% Complete & Operational**.
+* **Module 3 (Parent Management Module)**: **100% Complete & Operational**.
+* **Module 4 (Classroom Management Module)**: **100% Complete & Operational**.
+* **Module 5 (Student Management Module)**: **100% Complete & Operational**.
+* Application builds cleanly (`npm run build`) and runs locally at `http://localhost:3000`.
+
+---
+
+### Deferred Functionality & Next Steps
+
+* **Module 6: Reading Materials Management Module** will implement the DepEd Grade 3 graded reading passage library, phoneme exercises, and oral comprehension questions when explicitly instructed.
+
 
 
 

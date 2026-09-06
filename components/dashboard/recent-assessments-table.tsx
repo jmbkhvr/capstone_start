@@ -155,7 +155,7 @@ export function RecentAssessmentsTable({ assessments }: RecentAssessmentsTablePr
           </h4>
           <p className="text-xs max-w-sm leading-relaxed">
             Assessment logs and pronunciation evaluation results will automatically appear
-            here as Grade 3 pupils complete reading sessions in upcoming modules.
+            here as Grade 3 pupils complete reading sessions.
           </p>
         </div>
       ) : (

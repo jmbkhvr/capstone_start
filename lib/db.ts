@@ -99,6 +99,29 @@ function getDatabase(): Database.Database {
       updatedAt TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (teacherId) REFERENCES teachers(id) ON DELETE CASCADE
     );
+
+    -- STUDENTS TABLE (MODULE 5: STUDENT MANAGEMENT)
+    -- Stores Grade 3 pupil profiles managed by teachers.
+    -- Each student is assigned to a classroom, owned by an authorized teacher,
+    -- and can be optionally associated with an approved parent account.
+    -- Uses soft-deactivation (status = 'Inactive') to preserve assessment history.
+    CREATE TABLE IF NOT EXISTS students (
+      id TEXT PRIMARY KEY,
+      firstName TEXT NOT NULL,
+      middleName TEXT,
+      lastName TEXT NOT NULL,
+      fullName TEXT NOT NULL,
+      gradeLevel TEXT NOT NULL DEFAULT 'Grade 3',
+      classroomId TEXT NOT NULL,
+      teacherId TEXT NOT NULL,
+      parentId TEXT,
+      status TEXT NOT NULL DEFAULT 'Active',
+      createdAt TEXT DEFAULT (datetime('now')),
+      updatedAt TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (classroomId) REFERENCES classrooms(id) ON DELETE CASCADE,
+      FOREIGN KEY (teacherId) REFERENCES teachers(id) ON DELETE CASCADE,
+      FOREIGN KEY (parentId) REFERENCES parents(id) ON DELETE SET NULL
+    );
   `);
 
   return dbInstance;
