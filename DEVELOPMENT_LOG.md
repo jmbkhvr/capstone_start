@@ -283,3 +283,590 @@ Executed automated test suite (`test_password_reset.mjs`) covering all 8 passwor
 * None for Module 1. The complete Teacher Authentication Module is finished.
 * Future teacher modules (Classrooms, Students, Reading Materials, Assessments, Pronunciation Scoring, Reports) will be developed in future modules as instructed.
 
+---
+
+## Update 3 - 6:18 PM September 3, 2026
+
+### Update Information
+
+* **Update Number**: Update 3
+* **Exact Time**: 6:18 PM
+* **Exact Date**: September 3, 2026
+* **What Was Worked On**:
+  Complete design, backend API development, interactive frontend UI implementation, responsive layouts, data ownership enforcement, empty state design, Recharts performance visualization, and full automated & visual verification of **Module 2: Teacher Dashboard Module**.
+* **Why It Was Done**:
+  To serve as the primary landing page after teacher authentication, providing the authenticated teacher with an informative, clean overview of their Grade 3 pupils, classroom sections, reading assessments, diagnostic performance overview, system notifications, and direct access shortcuts to upcoming teacher modules.
+
+---
+
+### Development
+
+* **What Was Implemented**:
+  1. **Backend Dashboard API (`/api/dashboard`)**: Secure GET route verifying the teacher's session using `getAuthenticatedTeacher()` from HTTP-Only cookies, enforcing strict data isolation so teachers only see their own classes and pupils, and calculating summary metrics (`totalStudents`, `totalClasses`, `totalAssessments`, `studentsNeedingAttention`), recent assessment activity, and reading performance category averages with resilient schema checks.
+  2. **Unified Navigation System (`components/dashboard/dashboard-nav.tsx`)**: Responsive navigation supporting desktop sidebar and mobile drawer toggle, covering all 11 required navigation items (Dashboard [active], Parents, Classrooms, Students, Reading Materials, Assessments, Results & Reports, Monitoring & Progress, Notifications, Profile, and Logout) with informative modal dialogs for upcoming modules.
+  3. **KPI Summary Cards (`components/dashboard/summary-card.tsx`)**: 4 cards (Total Students, Total Classes, Assessments, Needs Attention) with support for empty indicators and dual-theme styling.
+  4. **Recent Assessments Table (`components/dashboard/recent-assessments-table.tsx`)**: Data table displaying Student, Assessment, Date, Score, and Status, with an informative DepEd reading empty state when no tests exist yet.
+  5. **Student Performance Overview (`components/dashboard/performance-chart.tsx`)**: Interactive Recharts bar visualization tracking the 4 key Grade 3 oral reading dimensions (Reading Accuracy, Pronunciation, Reading Fluency, Overall Performance) against DepEd benchmark targets.
+  6. **Quick Access Shortcuts (`components/dashboard/quick-access.tsx`)**: Action buttons ([ Manage Classes ], [ Manage Students ], [ Reading Materials ], [ Assessments ]) with interactive modal dialogs detailing upcoming module schedules.
+  7. **Main Teacher Dashboard Page (`app/dashboard/page.tsx`)**: Rebuilt page utilizing Axios for HTTP communication, dynamic time-of-day greeting ("Good morning / Good afternoon / Good evening, Teacher [Name]!"), unread notification dropdown, responsive loading spinner, error banner with retry action, and dual-theme compatibility.
+* **Files Created**:
+  1. `app/api/dashboard/route.ts` - Backend GET route handler for teacher dashboard data.
+  2. `components/dashboard/dashboard-nav.tsx` - Reusable navigation component with sidebar and drawer.
+  3. `components/dashboard/summary-card.tsx` - Modular KPI card component.
+  4. `components/dashboard/recent-assessments-table.tsx` - Recent assessment table with empty state handling.
+  5. `components/dashboard/performance-chart.tsx` - Recharts performance chart component.
+  6. `components/dashboard/quick-access.tsx` - Quick access action panel component.
+  7. `test_dashboard_module.mjs` - Automated regression test suite for Module 2.
+* **Files Modified**:
+  1. `app/dashboard/page.tsx` - Completely rebuilt dashboard UI using Axios and modular components.
+  2. `package.json` - Added `axios` and `recharts` dependencies.
+  3. `DEVELOPMENT_LOG.md` - Appended Update 3 documentation.
+* **Files Deleted**:
+  * None.
+* **Components Created**:
+  * `DashboardNav` (`components/dashboard/dashboard-nav.tsx`)
+  * `SummaryCard` (`components/dashboard/summary-card.tsx`)
+  * `RecentAssessmentsTable` (`components/dashboard/recent-assessments-table.tsx`)
+  * `PerformanceChart` (`components/dashboard/performance-chart.tsx`)
+  * `QuickAccess` (`components/dashboard/quick-access.tsx`)
+* **API Endpoints Created/Modified**:
+  * `GET /api/dashboard` (Created) - Protected endpoint returning authenticated teacher dashboard payload.
+* **Database Changes**:
+  * Leveraged existing `teachers` and `password_resets` tables. Added resilient schema-inspection queries checking for future tables (`classrooms`, `students`, `student_assessments`, `performance_metrics`) so that as future modules are introduced, the dashboard queries will automatically reflect real data without code changes.
+* **Dependencies Installed**:
+  * `axios` (^1.20.0) - Promise-based HTTP client for API requests as required by Plan A.
+  * `recharts` (^3.10.1) - Composable charting library for React 19 as required by Plan A.
+* **Authentication Integration**:
+  * Utilized existing `getAuthenticatedTeacher()` in `lib/auth.ts` to decode `teacher_auth_token` JWT cookie.
+  * Middleware (`middleware.ts`) automatically intercepts unauthenticated visits to `/dashboard` and redirects to `/login`.
+  * Frontend handles HTTP 401 gracefully by routing to `/login`.
+  * Logout action clears the cookie session and routes to `/login`.
+
+---
+
+### Problems & Solutions
+
+1. **Problem / Error**:
+   Upcoming module database tables (`classrooms`, `students`, `assessments`) do not exist yet in the database schema. Direct SQL queries (e.g. `SELECT COUNT(*) FROM classrooms`) would trigger SQLite `no such table` runtime exceptions.
+   * **Cause**:
+     Classrooms, students, and reading assessments belong to future modules (Module 3 through Module 6) and have not yet been migrated.
+   * **Solution**:
+     Implemented a safe helper `tableExists(tableName)` querying SQLite's `sqlite_master` catalog before querying each table. If tables are not yet created, safe default values (`0` and empty arrays `[]`) are returned.
+   * **Result**:
+     The dashboard API executes cleanly with zero runtime database errors, displays real counts when tables are added, and avoids fabricating fake data.
+
+2. **Problem / Error**:
+   Clicking future module links in the navigation bar or quick access buttons could navigate to dead 404 pages or create broken user experiences.
+   * **Cause**:
+     Modules 3–11 have not yet been developed, per explicit project instructions to strictly focus on Module 2.
+   * **Solution**:
+     Configured `DashboardNav` and `QuickAccess` components to intercept future module clicks and present clean modal notifications explaining the module's planned purpose and development phase.
+   * **Result**:
+     The navigation structure is fully visible and prepared for future modules while remaining functional and preventing dead links.
+
+---
+
+### Testing
+
+* **Automated Tests Executed (`test_dashboard_module.mjs`)**:
+  1. **Test 1**: Unauthenticated `GET /api/dashboard` request.
+     - Expected: HTTP 401 Unauthorized with `{ error: 'Unauthorized...' }`.
+     - Actual: HTTP 401 Unauthorized with expected JSON error.
+     - Status: **PASSED**.
+  2. **Test 2**: Unauthenticated navigation to `/dashboard`.
+     - Expected: HTTP 307/302 redirect to `/login?redirect=%2Fdashboard`.
+     - Actual: HTTP 307 redirect to `/login?redirect=%2Fdashboard`.
+     - Status: **PASSED**.
+  3. **Test 3**: Authenticated `GET /api/dashboard` for Teacher 1 (`maria.santos@school.edu.ph`).
+     - Expected: HTTP 200 OK with Teacher 1 profile, summary counts (0), and arrays.
+     - Actual: HTTP 200 OK matching Teacher 1 credentials and all required keys.
+     - Status: **PASSED**.
+  4. **Test 4**: Authenticated `GET /api/dashboard` for Teacher 2 (`sample@gmail.com`).
+     - Expected: HTTP 200 OK with Teacher 2 profile, verifying data ownership isolation.
+     - Actual: HTTP 200 OK, Teacher 2 payload strictly isolated from Teacher 1.
+     - Status: **PASSED**.
+  5. **Test 5**: Authenticated HTML page render for `/dashboard`.
+     - Expected: HTTP 200 OK.
+     - Actual: HTTP 200 OK.
+     - Status: **PASSED**.
+* **Visual & Interactive Browser Subagent Testing**:
+  1. **Login Flow**: Submitted valid credentials (`reset.teacher@school.edu.ph` / `NewPassword999!`) on `/login`; confirmed redirect to `/dashboard`.
+  2. **Greeting & Header**: Verified dynamic personalized greeting (`Good evening, Reset Test Teacher! 👋`) and teacher ID badge (`T-RESET-999`).
+  3. **Summary Cards**: Verified 4 cards rendered with zero counts and polite empty indicators ("No records yet").
+  4. **Performance Chart**: Verified Recharts bar chart rendered Phil-IRI dimensions with DepEd benchmark comparison bars and empty state guidance overlay.
+  5. **Recent Assessments**: Verified empty state message ("No assessments have been recorded yet").
+  6. **Quick Access**: Clicked "Manage Classes"; confirmed upcoming module modal opened and closed smoothly.
+  7. **Notification Bell**: Clicked notification bell; confirmed dropdown opened displaying Module 2 welcome notice.
+  8. **Theme Toggle**: Toggled to Child Mode (light emerald/amber) and back to Teacher Mode (dark slate/teal); confirmed smooth theme transitions.
+  - Video recording generated: `teacher_dashboard_demo_1788430428341.webp`.
+  - Status: **PASSED (100%)**.
+
+---
+
+### Current Status
+
+* **Module 1 (Authentication Module)**: **100% Complete & Operational**.
+* **Module 2 (Teacher Dashboard Module)**: **100% Complete & Operational**.
+* Application builds cleanly (`npm run build`) and runs cleanly locally (`npm run dev` / `npm run start`).
+
+---
+
+### Ready for Next Module
+
+* **Module 3: Parent Management Module** was completed in Update 4 below.
+* The Teacher Dashboard navigation and database hooks are already prepared to seamlessly receive classroom data when Classroom Management is implemented.
+
+---
+
+## Update 4 - 7:25 PM September 3, 2026
+
+### Update Information
+
+* **Update Number**: Update 4
+* **Exact Time**: 7:25 PM
+* **Exact Date**: September 3, 2026
+* **What Was Worked On**:
+  Complete design, database schema additions, backend REST API routes, frontend UI implementation, search and status filtering, parent detail inspections, approval and rejection workflows with confirmation dialogs, and automated & visual verification of **Module 3: Parent Management Module**.
+* **Why It Was Done**:
+  To enable Grade 3 school teachers to review parent account registration requests, verify pupil links, authorize portal access for approved parents, reject invalid registrations with feedback, and manage parent account statuses safely through the Teacher Web Application.
+
+---
+
+### Development
+
+* **What Was Implemented**:
+  1. **Database Schema Additions (`lib/db.ts` & `prisma/schema.prisma`)**: Created the `parents` table in SQLite (`data/capstone.db`) and defined the `Parent` model in Prisma ORM, tracking `id`, `fullName`, `email`, `contactNumber`, `passwordHash`, `childName`, `childGradeLevel`, `childSection`, `teacherId`, `status`, `rejectionReason`, `createdAt`, and `updatedAt`.
+  2. **Parent List & Status Filtering API (`app/api/parents/route.ts`)**: Secure GET endpoint verifying teacher session via `getAuthenticatedTeacher()`, filtering by status (`All`, `Pending`, `Approved`, `Rejected`) and search queries (parent name, email, child name), aggregating live status counts, and strictly sanitizing sensitive fields (`passwordHash` is never returned).
+  3. **Parent Profile Details API (`app/api/parents/[id]/route.ts`)**: GET endpoint returning comprehensive single-parent records and linked Grade 3 child info.
+  4. **Parent Approval API (`app/api/parents/[id]/approve/route.ts`)**: PATCH endpoint verifying teacher authorization, validating that the parent is pending, updating status to `Approved`, associating `teacherId`, and saving updates to SQLite.
+  5. **Parent Rejection API (`app/api/parents/[id]/reject/route.ts`)**: PATCH endpoint verifying teacher authorization, updating status to `Rejected`, and recording optional teacher feedback.
+  6. **Status Confirmation Modal (`components/parents/status-confirm-modal.tsx`)**: Confirmation dialogs for both Approve and Reject actions, preventing accidental status updates.
+  7. **Parent Details Modal (`components/parents/parent-details-modal.tsx`)**: Modal inspector displaying parent contact info, linked pupil name, grade level, and section, with contextual action buttons.
+  8. **Parent Management Page (`app/parents/page.tsx`)**: Interactive UI with search input, status tabs with badge counts, data table, empty states, loading indicator, and toast notifications.
+  9. **Navigation Integration (`components/dashboard/dashboard-nav.tsx`)**: Activated `Parents` navigation item (`isImplemented: true`), linking directly to `/parents`.
+  10. **Login Page Accessibility Enhancements (`app/login/page.tsx`)**: Added explicit IDs (`#email-input`, `#password-input`, `#login-submit-btn`) for reliable testing, accessibility, and form indexing.
+* **Files Created**:
+  1. `app/api/parents/route.ts` - Backend GET route for parent list and status counts.
+  2. `app/api/parents/[id]/route.ts` - Backend GET route for single parent profile.
+  3. `app/api/parents/[id]/approve/route.ts` - Backend PATCH route for approving parent registrations.
+  4. `app/api/parents/[id]/reject/route.ts` - Backend PATCH route for rejecting parent registrations.
+  5. `components/parents/status-confirm-modal.tsx` - Confirmation dialog component for status updates.
+  6. `components/parents/parent-details-modal.tsx` - Detailed parent inspection modal component.
+  7. `app/parents/page.tsx` - Interactive Parent Management page.
+  8. `test_parent_management_module.mjs` - Automated regression test suite for Module 3.
+* **Files Modified**:
+  1. `lib/db.ts` - Added `parents` table creation in SQLite initializer.
+  2. `prisma/schema.prisma` - Added `Parent` model and relation on `Teacher`.
+  3. `components/dashboard/dashboard-nav.tsx` - Activated `Parents` navigation item.
+  4. `app/login/page.tsx` - Added explicit element IDs for accessibility and automated interaction.
+  5. `DEVELOPMENT_LOG.md` - Appended Update 4 documentation.
+* **Files Deleted**:
+  * None.
+* **Components Created**:
+  * `StatusConfirmModal` (`components/parents/status-confirm-modal.tsx`)
+  * `ParentDetailsModal` (`components/parents/parent-details-modal.tsx`)
+* **API Endpoints Created**:
+  * `GET /api/parents`
+  * `GET /api/parents/[id]`
+  * `PATCH /api/parents/[id]/approve`
+  * `PATCH /api/parents/[id]/reject`
+* **Database Changes**:
+  * Added `parents` table in SQLite (`data/capstone.db`):
+    - `id` (TEXT PRIMARY KEY)
+    - `fullName` (TEXT NOT NULL)
+    - `email` (TEXT UNIQUE NOT NULL)
+    - `contactNumber` (TEXT)
+    - `passwordHash` (TEXT NOT NULL)
+    - `childName` (TEXT NOT NULL)
+    - `childGradeLevel` (TEXT DEFAULT 'Grade 3')
+    - `childSection` (TEXT)
+    - `teacherId` (TEXT, FOREIGN KEY references `teachers.id`)
+    - `status` (TEXT DEFAULT 'Pending')
+    - `rejectionReason` (TEXT)
+    - `createdAt` (TEXT DEFAULT datetime('now'))
+    - `updatedAt` (TEXT DEFAULT datetime('now'))
+* **Prisma Schema Changes**:
+  * Added `model Parent` and `parents Parent[]` relation to `Teacher`.
+* **Dependencies Added**:
+  * None required (reused installed dependencies: `axios`, `better-sqlite3`, `lucide-react`, `bcryptjs`, `jsonwebtoken`).
+
+---
+
+### Problems & Solutions
+
+1. **Problem / Error**:
+   Test script encountered `SqliteError: no such table: parents` during the first test run.
+   * **Cause**:
+     The standalone Node test runner instantiated raw `better-sqlite3` directly against `data/capstone.db` without executing the application's lazy initializer in `lib/db.ts`.
+   * **Solution**:
+     Added an explicit table initialization block in `test_parent_management_module.mjs` so test suites can run independently in CI/CD without requiring prior server boot.
+   * **Result**:
+     Automated test script executed cleanly with all 31 assertions passing.
+
+2. **Problem / Error**:
+   The browser subagent encountered input focus difficulty when logging in via synthetic tab keys.
+   * **Cause**:
+     Form inputs on `/login` were styled using modern Tailwind utility wrappers but lacked explicit standard element IDs.
+   * **Solution**:
+     Added `id="email-input"`, `id="password-input"`, and `id="login-submit-btn"` to `app/login/page.tsx`.
+   * **Result**:
+     Browser subagents and accessibility screen readers can immediately target inputs cleanly and reliably.
+
+---
+
+### Testing
+
+* **Automated Tests Executed (`test_parent_management_module.mjs`)**:
+  1. **Test 1**: Unauthenticated request to `/api/parents` -> HTTP 401 Unauthorized (**PASS**).
+  2. **Test 2**: Unauthenticated visit to `/parents` -> Redirects to `/login?redirect=%2Fparents` (**PASS**).
+  3. **Test 3**: Authenticated fetch of parent records and status counts (**PASS**).
+  4. **Test 4**: Status filtering (`?status=Pending`) (**PASS**).
+  5. **Test 5**: Search filtering by pupil name (`?search=Maria`) (**PASS**).
+  6. **Test 6**: Single parent details retrieval without `passwordHash` (**PASS**).
+  7. **Test 7**: Approval action (`PATCH /api/parents/[id]/approve`) updating database status to `Approved` (**PASS**).
+  8. **Test 8**: Re-approval prevention returning HTTP 400 Bad Request (**PASS**).
+  9. **Test 9**: Rejection action (`PATCH /api/parents/[id]/reject`) recording rejection reason (**PASS**).
+  10. **Test 10**: Re-rejection prevention returning HTTP 400 Bad Request (**PASS**).
+  11. **Test 11**: Authenticated HTML page render for `/parents` (**PASS**).
+  12. **Cleanup**: Removed all test records from the database (**PASS**).
+  - Overall automated test result: **31/31 assertions passed (100%)**.
+* **Visual & Interactive Browser Subagent Testing**:
+  1. **Navigation Flow**: Logged into Teacher Portal, clicked "Parents" in sidebar, and loaded `/parents`.
+  2. **Empty State Display**: Confirmed clean message ("No parent accounts found") when no records exist.
+  3. **Table & Details Modal**: Seeded sample registrations; reviewed parent contact info and Grade 3 pupil details (`Maria Dela Cruz`).
+  4. **Approval Flow**: Approved Juan Dela Cruz via confirmation dialog; verified success toast banner and green `Approved` badge.
+  5. **Rejection Flow**: Rejected Lourdes Reyes via confirmation dialog with reason; verified red `Rejected` badge and updated live counts (All: 2, Pending: 0, Approved: 1, Rejected: 1).
+  - Video recording generated: `parent_approval_demo_1788433914323.webp`.
+  - Screenshot: `parent_mgmt_done_1788434005605.png`.
+  - Status: **PASSED (100%)**.
+
+---
+
+### Current Status
+
+* **Module 1 (Authentication Module)**: **100% Complete & Operational**.
+* **Module 2 (Teacher Dashboard Module)**: **100% Complete & Operational**.
+* **Module 3 (Parent Management Module)**: **100% Complete & Operational**.
+* Application builds cleanly (`npm run build`) and runs cleanly locally (`npm run dev` / `npm run start`).
+
+---
+
+### Ready for Next Module
+
+* **Module 4: Classroom Management Module** was completed in Update 5 below.
+
+---
+
+## Update 5 - 3:18 PM September 6, 2026
+
+### Update Information
+
+* **Update Number**: Update 5
+* **Exact Time**: 3:18 PM
+* **Exact Date**: September 6, 2026
+* **What Was Worked On**:
+  Complete design, database schema additions, backend REST API routes, frontend UI implementation, search and status filtering, classroom creation, details modal view, classroom editing, soft archiving with confirmation checks, automated regression test suite, and visual & interactive browser verification of **Module 4: Classroom Management Module**.
+* **Why It Was Done**:
+  To enable Grade 3 school teachers to create and manage academic classroom sections, configure school years and sections, view classroom enrollment configurations, modify classroom details, and safely archive classrooms without risking data loss of pupil assignment or reading assessment history.
+
+---
+
+### Development
+
+* **What Was Implemented**:
+  1. **Database Schema Additions (`lib/db.ts` & `prisma/schema.prisma`)**:
+     - Added the `classrooms` table in SQLite (`data/capstone.db`) with columns: `id`, `name`, `gradeLevel`, `section`, `schoolYear`, `description`, `teacherId`, `status` ('Active' | 'Archived'), `createdAt`, `updatedAt`, and foreign key constraint linking to `teachers(id) ON DELETE CASCADE`.
+     - Defined the `Classroom` model in `prisma/schema.prisma` with relation to `Teacher`.
+  2. **Archiving vs. Deletion Architectural Decision (Section 10)**:
+     - Implemented soft archiving (`status = 'Archived'`) rather than hard deletion to permanently safeguard pupil assignment and oral reading assessment history from accidental data destruction.
+  3. **Classrooms List, Search & Filter API (`app/api/classrooms/route.ts`)**:
+     - `GET`: Authenticates requesting teacher via `getAuthenticatedTeacher()`, scopes queries strictly to `teacherId`, computes aggregate status counts (`all`, `active`, `archived`) for live tab badges, and filters by search text (matching name, section, school year, description).
+     - `POST`: Validates required fields (`name`, `schoolYear`), prevents duplicate active classroom names for the same teacher, generates UUID primary key, and saves record to SQLite.
+  4. **Single Classroom Details & Update API (`app/api/classrooms/[id]/route.ts`)**:
+     - `GET`: Authenticates teacher, verifies ownership (`teacherId = teacher.id`), and returns full classroom details and student count.
+     - `PUT`: Validates updated inputs, prevents naming conflicts with other active classrooms, and updates database record.
+  5. **Archive & Restore API (`app/api/classrooms/[id]/archive/route.ts`)**:
+     - `PATCH`: Authenticates teacher, verifies ownership, and updates status between `'Active'` and `'Archived'`.
+  6. **Create Classroom Modal (`components/classrooms/create-classroom-modal.tsx`)**:
+     - Accessible modal form capturing Classroom Name, Grade Level (Grade 3), Section, School Year, and Description with form validation and loading spinners.
+  7. **Edit Classroom Modal (`components/classrooms/edit-classroom-modal.tsx`)**:
+     - Modal dialog pre-loaded with selected classroom attributes allowing teachers to update name, section, and notes.
+  8. **Classroom Details Modal (`components/classrooms/classroom-details-modal.tsx`)**:
+     - Inspection dialog showing classroom name, grade level, school year, section, teacher name, enrolled pupil count, description, and status pill badge, with quick-action buttons to directly edit or archive the classroom.
+     - Includes a clear notice explaining that full pupil enrollment will be managed in Module 5 (Student Management).
+  9. **Archive & Restore Confirmation Modal (`components/classrooms/archive-confirm-modal.tsx`)**:
+     - High-visibility confirmation dialog explaining that student and assessment history are safely preserved through soft archiving.
+  10. **Classroom Management Page (`app/classrooms/page.tsx`)**:
+      - Full interactive page featuring `DashboardNav` sidebar, top header with teacher greeting and theme toggle, action bar with `[ + Create Classroom ]` button, status filter tabs (`All`, `Active`, `Archived`) with live badge counts, real-time search input, responsive data table, empty state, loading state, and error handling.
+  11. **Navigation Integration (`components/dashboard/dashboard-nav.tsx` & `components/dashboard/quick-access.tsx`)**:
+      - Activated `Classrooms` sidebar navigation link (`isImplemented: true`) directing to `/classrooms`.
+      - Connected Dashboard Quick Access button `Manage Classes` directly to `/classrooms`.
+
+* **Files Created**:
+  1. `app/api/classrooms/route.ts`: Backend GET and POST route handlers for classroom collection.
+  2. `app/api/classrooms/[id]/route.ts`: Backend GET and PUT route handlers for individual classroom.
+  3. `app/api/classrooms/[id]/archive/route.ts`: Backend PATCH route handler for soft archiving and restoring.
+  4. `components/classrooms/create-classroom-modal.tsx`: Modal component for creating a classroom.
+  5. `components/classrooms/edit-classroom-modal.tsx`: Modal component for editing classroom details.
+  6. `components/classrooms/classroom-details-modal.tsx`: Modal component for viewing classroom overview.
+  7. `components/classrooms/archive-confirm-modal.tsx`: Confirmation dialog component for archiving/restoring.
+  8. `app/classrooms/page.tsx`: Interactive Classroom Management page.
+  9. `test_classroom_management_module.mjs`: Automated integration test suite.
+
+* **Files Modified**:
+  1. `lib/db.ts`: Added SQLite `classrooms` table creation schema.
+  2. `prisma/schema.prisma`: Added `Classroom` model and relation to `Teacher`.
+  3. `components/dashboard/dashboard-nav.tsx`: Activated `Classrooms` navigation item (`isImplemented: true`).
+  4. `components/dashboard/quick-access.tsx`: Linked `Manage Classes` action directly to `/classrooms`.
+  5. `test_dashboard_module.mjs`: Added environment variable port fallback.
+  6. `test_parent_management_module.mjs`: Added environment variable port fallback.
+  7. `DEVELOPMENT_LOG.md`: Appended Update 5 documentation.
+
+* **Files Deleted**:
+  * None.
+
+* **Components Created**:
+  * `CreateClassroomModal` (`components/classrooms/create-classroom-modal.tsx`)
+  * `EditClassroomModal` (`components/classrooms/edit-classroom-modal.tsx`)
+  * `ClassroomDetailsModal` (`components/classrooms/classroom-details-modal.tsx`)
+  * `ArchiveConfirmModal` (`components/classrooms/archive-confirm-modal.tsx`)
+
+* **API Endpoints Created**:
+  * `GET /api/classrooms`: Retrieve classrooms list with search and status counts.
+  * `POST /api/classrooms`: Create a new classroom.
+  * `GET /api/classrooms/[id]`: Retrieve single classroom details.
+  * `PUT /api/classrooms/[id]`: Update classroom details.
+  * `PATCH /api/classrooms/[id]/archive`: Toggle/set classroom archive status.
+
+* **Database Changes**:
+  * Added `classrooms` table to SQLite (`data/capstone.db`):
+    - `id` (TEXT PRIMARY KEY)
+    - `name` (TEXT NOT NULL)
+    - `gradeLevel` (TEXT NOT NULL DEFAULT 'Grade 3')
+    - `section` (TEXT)
+    - `schoolYear` (TEXT NOT NULL)
+    - `description` (TEXT)
+    - `teacherId` (TEXT NOT NULL, FOREIGN KEY references `teachers.id`)
+    - `status` (TEXT NOT NULL DEFAULT 'Active')
+    - `createdAt` (TEXT DEFAULT datetime('now'))
+    - `updatedAt` (TEXT DEFAULT datetime('now'))
+
+* **Prisma Changes**:
+  * Added `model Classroom` and `classrooms Classroom[]` relation to `Teacher` in `prisma/schema.prisma`.
+
+* **Dependencies Added**:
+  * None (reused existing Plan A stack: `better-sqlite3`, `axios`, `jsonwebtoken`, `lucide-react`, `uuid`).
+
+---
+
+### Problems & Solutions
+
+1. **Problem / Error**:
+   Port mismatch during cross-module automated testing (Module 2 test defaulted to port 3005 and Module 3 test defaulted to port 3006, while server ran on port 3000).
+   * **Cause**: Earlier individual test scripts had hardcoded test ports.
+   * **Solution**: Updated test scripts to use `process.env.TEST_BASE_URL || 'http://127.0.0.1:3000'`, allowing test suites to execute seamlessly across any development or staging port.
+   * **Result**: All test suites ran concurrently against the active production server with zero connection errors.
+
+2. **Problem / Error**:
+   Potential duplicate active classroom creation when a teacher submits identical names.
+   * **Cause**: Without backend uniqueness checks, double clicks or re-submissions could create redundant active classes.
+   * **Solution**: Added duplicate detection in `POST /api/classrooms` and `PUT /api/classrooms/[id]` that queries for active classrooms with the same name and school year under the same teacher ID, returning HTTP 409 Conflict.
+   * **Result**: Duplicate submissions are prevented cleanly and return understandable error feedback.
+
+---
+
+### Testing
+
+* **Automated Tests Executed (`test_classroom_management_module.mjs`)**:
+  1. **Test 1**: Unauthenticated `GET /api/classrooms` -> HTTP 401 Unauthorized (**PASS**).
+  2. **Test 2**: Unauthenticated visit to `/classrooms` -> Redirects to `/login?redirect=%2Fclassrooms` (**PASS**).
+  3. **Test 3**: Database schema verification (columns: id, name, gradeLevel, section, schoolYear, teacherId, status, createdAt, updatedAt) (**PASS**).
+  4. **Test 4**: Authenticated classroom listing and status counts retrieval (**PASS**).
+  5. **Test 5**: Validation: Missing classroom name returns HTTP 400 Bad Request (**PASS**).
+  6. **Test 6**: Validation: Missing school year returns HTTP 400 Bad Request (**PASS**).
+  7. **Test 7**: Successful classroom creation returns HTTP 201 Created and persists in SQLite (**PASS**).
+  8. **Test 8**: Duplicate active classroom creation for same teacher returns HTTP 409 Conflict (**PASS**).
+  9. **Test 9**: Single classroom details retrieval (`GET /api/classrooms/[id]`) (**PASS**).
+  10. **Test 10**: Invalid classroom ID returns HTTP 404 Not Found (**PASS**).
+  11. **Test 11**: Edit classroom information (`PUT /api/classrooms/[id]`) (**PASS**).
+  12. **Test 12**: Soft archiving (`PATCH /api/classrooms/[id]/archive`) sets status to `'Archived'` without deleting data (**PASS**).
+  13. **Test 13**: Re-archiving an already archived classroom returns HTTP 400 Bad Request (**PASS**).
+  14. **Test 14**: Restoring classroom sets status back to `'Active'` (**PASS**).
+  15. **Test 15**: Search filtering by section keyword locates classroom (**PASS**).
+  16. **Test 16**: Multi-tenant authorization: Teacher 2 cannot view, edit, or archive Teacher 1's classroom (**PASS**).
+  17. **Test 17**: Authenticated HTML page render for `/classrooms` returns HTTP 200 OK (**PASS**).
+  - Overall automated result: **50/50 tests passed (100%)**.
+
+* **Regression Tests Executed**:
+  - `test_dashboard_module.mjs`: **19/19 passed (100%)**.
+  - `test_parent_management_module.mjs`: **31/31 passed (100%)**.
+  - Next.js Production Build (`npm run build`): **Compiled successfully in 5.2s, 0 TypeScript/lint errors**.
+
+* **Visual & Interactive Browser Subagent Testing**:
+  1. **Login & Nav**: Logged in as teacher `reset.teacher@school.edu.ph` and navigated to `/classrooms`.
+  2. **Empty State**: Verified clean empty state with prompt and "+ Create Classroom" button.
+  3. **Classroom Creation**: Created "Grade 3 - Section Diamond" and "Grade 3 - Section Emerald".
+  4. **Details Modal**: Inspected details modal for Section Diamond (Grade 3, SY 2026-2027, teacher profile, student notice).
+  5. **Editing**: Updated classroom description and verified instant table update.
+  6. **Archiving & Filter Tabs**: Archived Section Emerald via confirmation modal; verified tab counts updated to `All: 2`, `Active: 1`, `Archived: 1`. Verified switching tabs filtered the table accordingly.
+  - Video recording generated: `classroom_mgmt_demo_1788678332448.webp`.
+  - Screenshots:
+    - Empty state: `classrooms_empty_state_1788678449701.png`.
+    - Details modal: `classroom_details_modal_1788678634618.png`.
+    - Final roster: `classrooms_final_roster_1788678855550.png`.
+  - Status: **PASSED (100%)**.
+
+---
+
+### Current Status
+
+* **Module 1 (Authentication Module)**: **100% Complete & Operational**.
+* **Module 2 (Teacher Dashboard Module)**: **100% Complete & Operational**.
+* **Module 3 (Parent Management Module)**: **100% Complete & Operational**.
+* **Module 4 (Classroom Management Module)**: **100% Complete & Operational**.
+* Application builds cleanly (`npm run build`) and runs locally at `http://localhost:3000`.
+
+---
+
+### Deferred Functionality & Next Steps
+
+* None. All planned Module 4 features are fully operational.
+
+---
+
+## Update 6 - 04:14 PM September 6, 2026
+
+### Update Information
+
+* **Update Number**: Update 6
+* **Exact Time**: 04:14 PM
+* **Exact Date**: September 6, 2026
+* **What Was Worked On**: 
+  Complete implementation and end-to-end verification of **Module 5: Student Management Module** (Grade 3 Pupil Enrollment, Profile Management, Classroom Section Transfer, Linked Parent Association, Soft Deactivation and Restoration preserving Phil-IRI Reading Assessment Data, Roster Search & Classroom/Status Filtering, Responsive Data Table, and Multi-Tenant Security Isolation).
+* **Why It Was Done**: 
+  To provide elementary school teachers with a dedicated management interface for Grade 3 pupils enrolled in their classrooms. Pupils are tracked with their full name, grade level (strictly Grade 3 focus), assigned classroom section, and linked parent contact. Soft deactivation is enforced so that historical oral reading scores, speech recordings, and Phil-IRI diagnostic metrics are never permanently destroyed.
+
+---
+
+### Files Created
+
+1. **`components/students/add-student-modal.tsx`**: Modal dialog component for enrolling a new Grade 3 pupil. Validates first and last names, links the pupil to the teacher's active classroom sections, and supports optional linkage to approved parent accounts.
+2. **`components/students/edit-student-modal.tsx`**: Pre-populated modal form allowing teachers to update student names, assigned classroom section, and linked parent guardian.
+3. **`components/students/student-details-modal.tsx`**: Comprehensive student detail viewer showing academic placement, section info, parent guardian contacts, enrollment date, and quick action shortcuts.
+4. **`components/students/move-student-modal.tsx`**: Interactive transfer modal enabling teachers to safely move a pupil from their current classroom section to another active section while verifying teacher ownership and avoiding duplicate naming.
+5. **`components/students/deactivate-confirm-modal.tsx`**: Confirmation modal with Data Preservation Guarantee banner, allowing teachers to soft-deactivate pupils from active queues or restore them back to active roster.
+6. **`app/students/page.tsx`**: Main Student Management page UI. Includes top metric summary cards (Total Pupils, Active for Reading, Inactive Records), live search bar, classroom dropdown filter, status tabs (`All`, `Active`, `Inactive`) with badge counts, responsive table with pupil avatar initials, actions, and toast notifications.
+7. **`app/api/students/route.ts`**: Backend GET (list students with search, classroom, and status filtering plus teacher classroom/parent options and status counts) and POST (create pupil with duplicate enrollment validation).
+8. **`app/api/students/[id]/route.ts`**: Backend GET (single pupil details with joined classroom and parent) and PUT (update pupil details with conflict checking).
+9. **`app/api/students/[id]/classroom/route.ts`**: Backend PATCH endpoint for moving a pupil to another classroom owned by the teacher.
+10. **`app/api/students/[id]/status/route.ts`**: Backend PATCH endpoint for toggling pupil status between 'Active' and 'Inactive' without data loss.
+11. **`test_student_management_module.mjs`**: Comprehensive automated test suite with 37 integration tests covering authentication, validations, duplicate prevention, updates, classroom transfers, soft deactivation/restoration, filtering, and cross-teacher multi-tenant isolation.
+
+---
+
+### Files Modified
+
+1. **`lib/db.ts`**: Created SQLite `students` table with primary key `id`, names (`firstName`, `middleName`, `lastName`, `fullName`), `gradeLevel` ('Grade 3'), `classroomId`, `teacherId`, `parentId`, `status` ('Active' | 'Inactive'), timestamps (`createdAt`, `updatedAt`), and foreign keys referencing `classrooms.id`, `teachers.id`, and `parents.id`.
+2. **`prisma/schema.prisma`**: Defined the `Student` Prisma model and added relational bindings (`students Student[]`) to `Teacher`, `Classroom`, and `Parent` models.
+3. **`components/dashboard/dashboard-nav.tsx`**: Activated the `Students` sidebar navigation item (`isImplemented: true`, removed pending badge) and updated `Reading Materials` to `Module 6`.
+4. **`components/dashboard/quick-access.tsx`**: Updated the `Manage Students` quick access card to navigate directly to `/students` and updated future module badges.
+5. **`DEVELOPMENT_LOG.md`**: Appended Update 6 documentation.
+
+---
+
+### Files Deleted
+
+* None.
+
+---
+
+### Important Code Changes
+
+* **Database Architecture**: Implemented the `students` table in SQLite with strict foreign keys to `teachers`, `classrooms`, and `parents`.
+* **Duplicate Detection**: Backend validates that no two active students with identical first and last names can be enrolled in the same classroom under the same teacher.
+* **Soft Deactivation vs Hard Deletion**: Permanent row deletion is strictly prevented. Inactive students are preserved in SQLite so historical reading assessments, Phil-IRI diagnostic metrics, and audio recordings remain 100% intact.
+* **Multi-Tenant Security Scoping**: All API routes (`GET`, `POST`, `PUT`, `PATCH`) explicitly scope queries using `teacherId = teacher.id`. Cross-teacher access attempts return HTTP 403 or 404.
+* **Responsive Layout Design**: Built `app/students/page.tsx` using `min-h-screen flex flex-col lg:flex-row` and `<div className="flex-1 flex flex-col min-w-0">` to guarantee zero top-spacing visual glitches across all screen sizes.
+* **Code Commenting Discipline**: Every block of code created or modified includes meaningful explanatory comments describing its exact purpose.
+
+---
+
+### Database Changes
+
+* **Table Created**: `students`
+  * `id TEXT PRIMARY KEY`
+  * `firstName TEXT NOT NULL`
+  * `middleName TEXT`
+  * `lastName TEXT NOT NULL`
+  * `fullName TEXT NOT NULL`
+  * `gradeLevel TEXT NOT NULL DEFAULT 'Grade 3'`
+  * `classroomId TEXT NOT NULL`
+  * `teacherId TEXT NOT NULL`
+  * `parentId TEXT`
+  * `status TEXT NOT NULL DEFAULT 'Active'`
+  * `createdAt TEXT DEFAULT (datetime('now'))`
+  * `updatedAt TEXT DEFAULT (datetime('now'))`
+  * Foreign Keys: `classroomId` -> `classrooms(id)`, `teacherId` -> `teachers(id)`, `parentId` -> `parents(id)`.
+
+---
+
+### Verification and Testing Results
+
+* **Automated Tests Executed (`test_student_management_module.mjs`)**:
+  1. Unauthenticated `GET /api/students` returns HTTP 401 Unauthorized (**PASS**).
+  2. Unauthenticated visit to `/students` redirects to `/login` (**PASS**).
+  3. Authenticated `GET /api/students` returns pupil roster and status counts (**PASS**).
+  4. Input validations on `POST /api/students` (missing first name, last name, classroom) return HTTP 400 (**PASS**).
+  5. Successful pupil creation (`POST /api/students`) returns HTTP 201 Created (**PASS**).
+  6. Duplicate pupil enrollment in same classroom returns HTTP 409 Conflict (**PASS**).
+  7. Single pupil retrieval (`GET /api/students/[id]`) returns full details (**PASS**).
+  8. Update pupil details (`PUT /api/students/[id]`) (**PASS**).
+  9. Classroom transfer (`PATCH /api/students/[id]/classroom`) reassigns section (**PASS**).
+  10. Attempting transfer to current classroom returns HTTP 400 (**PASS**).
+  11. Soft deactivation (`PATCH /api/students/[id]/status`) sets status to `'Inactive'` (**PASS**).
+  12. Pupil restoration sets status back to `'Active'` (**PASS**).
+  13. Search query filtering locates pupil by name (**PASS**).
+  14. Classroom filter returns only pupils in selected section (**PASS**).
+  15. Multi-tenant isolation: Teacher B cannot view, edit, or move Teacher A's pupils (**PASS**).
+  16. Authenticated HTML page render for `/students` returns HTTP 200 OK (**PASS**).
+  - Overall automated result: **37/37 tests passed (100%)**.
+
+* **Regression Tests Executed**:
+  - `test_classroom_management_module.mjs`: **50/50 passed (100%)**.
+  - `test_parent_management_module.mjs`: **31/31 passed (100%)**.
+  - Next.js Production Build (`npm run build`): **Compiled successfully in 1.8s, 0 TypeScript/lint errors**.
+
+* **Visual & Interactive Browser Subagent Testing**:
+  - Logged into Teacher Portal via `http://localhost:3000/login`.
+  - Navigated to `/students` via sidebar link.
+  - Verified clean layout with top metric cards, filter tabs, and responsive table.
+  - Enrolled new pupil "Jose Protacio Rizal", assigned to Grade 3 section and linked to parent "Corazon Aquino".
+  - Verified details modal preview showing Phil-IRI metrics and parent info.
+  - Transferred pupil between active classroom sections.
+  - Edited pupil profile (middle name updated to Mercado).
+  - Deactivated pupil and verified Data Preservation guarantee modal.
+  - Filtered by Inactive tab and restored pupil back to Active status.
+  - Video recording generated: `student_mgmt_demo_1788681281431.webp`.
+  - Status: **PASSED (100%)**.
+
+---
+
+### Current Status
+
+* **Module 1 (Authentication Module)**: **100% Complete & Operational**.
+* **Module 2 (Teacher Dashboard Module)**: **100% Complete & Operational**.
+* **Module 3 (Parent Management Module)**: **100% Complete & Operational**.
+* **Module 4 (Classroom Management Module)**: **100% Complete & Operational**.
+* **Module 5 (Student Management Module)**: **100% Complete & Operational**.
+* Application builds cleanly (`npm run build`) and runs locally at `http://localhost:3000`.
+
+---
+
+### Deferred Functionality & Next Steps
+
+* **Module 6: Reading Materials Management Module** will implement the DepEd Grade 3 graded reading passage library, phoneme exercises, and oral comprehension questions when explicitly instructed.
+
+
+
+
+

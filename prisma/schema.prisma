@@ -56,6 +56,15 @@ model Teacher {
 
   // Relation to password reset requests created for this teacher.
   passwordResets PasswordReset[]
+
+  // Relation to parent registration requests managed by this teacher (Module 3).
+  parents        Parent[]
+
+  // Relation to classrooms managed by this teacher (Module 4).
+  classrooms     Classroom[]
+
+  // Relation to students managed by this teacher (Module 5).
+  students       Student[]
 }
 
 // ============================================================================
@@ -94,3 +103,172 @@ model PasswordReset {
   // Relation to Teacher model.
   teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 }
+
+// ============================================================================
+// PARENT ACCOUNT MODEL (MODULE 3)
+// ============================================================================
+// What this model does:
+// Represents parent user registration requests and accounts for Grade 3 pupils.
+// Teachers review, approve, or reject these accounts.
+//
+// Security Note:
+// Passwords will be stored hashed with bcryptjs for future mobile app login.
+// Passwords and hashes are NEVER exposed to teacher client responses.
+// ============================================================================
+model Parent {
+  // Unique internal database ID (UUID string).
+  id              String   @id @default(uuid())
+
+  // Full name of the parent or guardian.
+  fullName        String
+
+  // Email address used by parent for communication & mobile app login.
+  email           String   @unique
+
+  // Contact number / telephone number for school notifications.
+  contactNumber   String?
+
+  // Cryptographically hashed password.
+  passwordHash    String
+
+  // Name of the Grade 3 child/pupil.
+  childName       String
+
+  // Grade level of child (defaults to 'Grade 3').
+  childGradeLevel String   @default("Grade 3")
+
+  // Classroom section (e.g. 'Diamond', 'Mabini').
+  childSection    String?
+
+  // Foreign key referencing the approving teacher account.
+  teacherId       String?
+
+  // Account status: 'Pending', 'Approved', 'Rejected'.
+  status          String   @default("Pending")
+
+  // Rejection note or feedback if rejected by the teacher.
+  rejectionReason String?
+
+  // Creation timestamp.
+  createdAt       DateTime @default(now())
+
+  // Last update timestamp.
+  updatedAt       DateTime @updatedAt
+
+  // Relation to Teacher model.
+  teacher         Teacher? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+
+  // Relation to students linked to this parent (Module 5).
+  students        Student[]
+}
+
+// ============================================================================
+// CLASSROOM MODEL (MODULE 4: CLASSROOM MANAGEMENT)
+// ============================================================================
+// What this model does:
+// Represents an academic classroom section created and managed by a teacher.
+// Stores information including classroom name, grade level (Grade 3), section,
+// school year, optional description, status ('Active' | 'Archived'), and ownership.
+//
+// Archiving Note:
+// Classrooms use soft archiving (status = 'Archived') rather than permanent hard
+// deletion so that historical student assessments and academic records are preserved.
+// ============================================================================
+model Classroom {
+  // Unique internal database ID generated as a UUID string.
+  id          String   @id @default(uuid())
+
+  // Descriptive name of the classroom (e.g. "Grade 3 - Section Diamond").
+  name        String
+
+  // Grade level of the classroom (defaults to "Grade 3").
+  gradeLevel  String   @default("Grade 3")
+
+  // Classroom section label (e.g. "Diamond", "Mabini").
+  section     String?
+
+  // Academic school year (e.g. "2026-2027").
+  schoolYear  String
+
+  // Optional description or notes for the classroom.
+  description String?
+
+  // Foreign key referencing the teacher who owns and manages this classroom.
+  teacherId   String
+
+  // Lifecycle status: 'Active' or 'Archived'.
+  status      String   @default("Active")
+
+  // Creation timestamp recorded when classroom was created.
+  createdAt   DateTime @default(now())
+
+  // Timestamp updated automatically whenever classroom info changes.
+  updatedAt   DateTime @updatedAt
+
+  // Relation to the owning Teacher account.
+  teacher     Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  // Relation to students enrolled in this classroom (Module 5).
+  students    Student[]
+}
+
+// ============================================================================
+// STUDENT MODEL (MODULE 5: STUDENT MANAGEMENT)
+// ============================================================================
+// What this model does:
+// Represents a Grade 3 pupil profile managed by a teacher.
+// Stores pupil's name (first, middle, last, and full name), grade level,
+// assigned classroom ID, teacher ID, optional linked parent ID, status, and timestamps.
+//
+// Soft Deactivation Note:
+// Uses soft deactivation (status = 'Inactive') instead of permanent deletion to
+// safeguard historical oral pronunciation evaluations and Phil-IRI diagnostic metrics.
+// ============================================================================
+model Student {
+  // Unique internal database ID generated as a UUID string.
+  id          String    @id @default(uuid())
+
+  // Pupil's first name.
+  firstName   String
+
+  // Pupil's middle name (optional).
+  middleName  String?
+
+  // Pupil's last name / surname.
+  lastName    String
+
+  // Full composite name for fast queries and table sorting.
+  fullName    String
+
+  // Grade level of pupil (defaults to target Grade 3).
+  gradeLevel  String    @default("Grade 3")
+
+  // Foreign key pointing to the classroom section the pupil is enrolled in.
+  classroomId String
+
+  // Foreign key pointing to the teacher who manages this pupil profile.
+  teacherId   String
+
+  // Optional foreign key pointing to the pupil's approved parent/guardian account.
+  parentId    String?
+
+  // Account status: 'Active' or 'Inactive'.
+  status      String    @default("Active")
+
+  // Creation timestamp recorded when the pupil record was created.
+  createdAt   DateTime  @default(now())
+
+  // Timestamp updated automatically whenever student record changes.
+  updatedAt   DateTime  @updatedAt
+
+  // Relation to Classroom section.
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+
+  // Relation to managing Teacher.
+  teacher     Teacher   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  // Relation to linked Parent account (optional).
+  parent      Parent?   @relation(fields: [parentId], references: [id], onDelete: SetNull)
+}
+
+
