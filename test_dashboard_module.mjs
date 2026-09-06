@@ -16,7 +16,7 @@ import Database from 'better-sqlite3';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'capstone_teacher_auth_secret_key_2026_safe';
-const BASE_URL = 'http://127.0.0.1:3005';
+const BASE_URL = process.env.TEST_BASE_URL || 'http://127.0.0.1:3000';
 
 const db = new Database('data/capstone.db');
 

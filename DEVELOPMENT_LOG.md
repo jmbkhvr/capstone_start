@@ -553,7 +553,185 @@ Executed automated test suite (`test_password_reset.mjs`) covering all 8 passwor
 
 ### Ready for Next Module
 
-* **Module 4 (Classroom Management or Student Management)** is ready for development when instructed.
+* **Module 4: Classroom Management Module** was completed in Update 5 below.
+
+---
+
+## Update 5 - 3:18 PM September 6, 2026
+
+### Update Information
+
+* **Update Number**: Update 5
+* **Exact Time**: 3:18 PM
+* **Exact Date**: September 6, 2026
+* **What Was Worked On**:
+  Complete design, database schema additions, backend REST API routes, frontend UI implementation, search and status filtering, classroom creation, details modal view, classroom editing, soft archiving with confirmation checks, automated regression test suite, and visual & interactive browser verification of **Module 4: Classroom Management Module**.
+* **Why It Was Done**:
+  To enable Grade 3 school teachers to create and manage academic classroom sections, configure school years and sections, view classroom enrollment configurations, modify classroom details, and safely archive classrooms without risking data loss of pupil assignment or reading assessment history.
+
+---
+
+### Development
+
+* **What Was Implemented**:
+  1. **Database Schema Additions (`lib/db.ts` & `prisma/schema.prisma`)**:
+     - Added the `classrooms` table in SQLite (`data/capstone.db`) with columns: `id`, `name`, `gradeLevel`, `section`, `schoolYear`, `description`, `teacherId`, `status` ('Active' | 'Archived'), `createdAt`, `updatedAt`, and foreign key constraint linking to `teachers(id) ON DELETE CASCADE`.
+     - Defined the `Classroom` model in `prisma/schema.prisma` with relation to `Teacher`.
+  2. **Archiving vs. Deletion Architectural Decision (Section 10)**:
+     - Implemented soft archiving (`status = 'Archived'`) rather than hard deletion to permanently safeguard pupil assignment and oral reading assessment history from accidental data destruction.
+  3. **Classrooms List, Search & Filter API (`app/api/classrooms/route.ts`)**:
+     - `GET`: Authenticates requesting teacher via `getAuthenticatedTeacher()`, scopes queries strictly to `teacherId`, computes aggregate status counts (`all`, `active`, `archived`) for live tab badges, and filters by search text (matching name, section, school year, description).
+     - `POST`: Validates required fields (`name`, `schoolYear`), prevents duplicate active classroom names for the same teacher, generates UUID primary key, and saves record to SQLite.
+  4. **Single Classroom Details & Update API (`app/api/classrooms/[id]/route.ts`)**:
+     - `GET`: Authenticates teacher, verifies ownership (`teacherId = teacher.id`), and returns full classroom details and student count.
+     - `PUT`: Validates updated inputs, prevents naming conflicts with other active classrooms, and updates database record.
+  5. **Archive & Restore API (`app/api/classrooms/[id]/archive/route.ts`)**:
+     - `PATCH`: Authenticates teacher, verifies ownership, and updates status between `'Active'` and `'Archived'`.
+  6. **Create Classroom Modal (`components/classrooms/create-classroom-modal.tsx`)**:
+     - Accessible modal form capturing Classroom Name, Grade Level (Grade 3), Section, School Year, and Description with form validation and loading spinners.
+  7. **Edit Classroom Modal (`components/classrooms/edit-classroom-modal.tsx`)**:
+     - Modal dialog pre-loaded with selected classroom attributes allowing teachers to update name, section, and notes.
+  8. **Classroom Details Modal (`components/classrooms/classroom-details-modal.tsx`)**:
+     - Inspection dialog showing classroom name, grade level, school year, section, teacher name, enrolled pupil count, description, and status pill badge, with quick-action buttons to directly edit or archive the classroom.
+     - Includes a clear notice explaining that full pupil enrollment will be managed in Module 5 (Student Management).
+  9. **Archive & Restore Confirmation Modal (`components/classrooms/archive-confirm-modal.tsx`)**:
+     - High-visibility confirmation dialog explaining that student and assessment history are safely preserved through soft archiving.
+  10. **Classroom Management Page (`app/classrooms/page.tsx`)**:
+      - Full interactive page featuring `DashboardNav` sidebar, top header with teacher greeting and theme toggle, action bar with `[ + Create Classroom ]` button, status filter tabs (`All`, `Active`, `Archived`) with live badge counts, real-time search input, responsive data table, empty state, loading state, and error handling.
+  11. **Navigation Integration (`components/dashboard/dashboard-nav.tsx` & `components/dashboard/quick-access.tsx`)**:
+      - Activated `Classrooms` sidebar navigation link (`isImplemented: true`) directing to `/classrooms`.
+      - Connected Dashboard Quick Access button `Manage Classes` directly to `/classrooms`.
+
+* **Files Created**:
+  1. `app/api/classrooms/route.ts`: Backend GET and POST route handlers for classroom collection.
+  2. `app/api/classrooms/[id]/route.ts`: Backend GET and PUT route handlers for individual classroom.
+  3. `app/api/classrooms/[id]/archive/route.ts`: Backend PATCH route handler for soft archiving and restoring.
+  4. `components/classrooms/create-classroom-modal.tsx`: Modal component for creating a classroom.
+  5. `components/classrooms/edit-classroom-modal.tsx`: Modal component for editing classroom details.
+  6. `components/classrooms/classroom-details-modal.tsx`: Modal component for viewing classroom overview.
+  7. `components/classrooms/archive-confirm-modal.tsx`: Confirmation dialog component for archiving/restoring.
+  8. `app/classrooms/page.tsx`: Interactive Classroom Management page.
+  9. `test_classroom_management_module.mjs`: Automated integration test suite.
+
+* **Files Modified**:
+  1. `lib/db.ts`: Added SQLite `classrooms` table creation schema.
+  2. `prisma/schema.prisma`: Added `Classroom` model and relation to `Teacher`.
+  3. `components/dashboard/dashboard-nav.tsx`: Activated `Classrooms` navigation item (`isImplemented: true`).
+  4. `components/dashboard/quick-access.tsx`: Linked `Manage Classes` action directly to `/classrooms`.
+  5. `test_dashboard_module.mjs`: Added environment variable port fallback.
+  6. `test_parent_management_module.mjs`: Added environment variable port fallback.
+  7. `DEVELOPMENT_LOG.md`: Appended Update 5 documentation.
+
+* **Files Deleted**:
+  * None.
+
+* **Components Created**:
+  * `CreateClassroomModal` (`components/classrooms/create-classroom-modal.tsx`)
+  * `EditClassroomModal` (`components/classrooms/edit-classroom-modal.tsx`)
+  * `ClassroomDetailsModal` (`components/classrooms/classroom-details-modal.tsx`)
+  * `ArchiveConfirmModal` (`components/classrooms/archive-confirm-modal.tsx`)
+
+* **API Endpoints Created**:
+  * `GET /api/classrooms`: Retrieve classrooms list with search and status counts.
+  * `POST /api/classrooms`: Create a new classroom.
+  * `GET /api/classrooms/[id]`: Retrieve single classroom details.
+  * `PUT /api/classrooms/[id]`: Update classroom details.
+  * `PATCH /api/classrooms/[id]/archive`: Toggle/set classroom archive status.
+
+* **Database Changes**:
+  * Added `classrooms` table to SQLite (`data/capstone.db`):
+    - `id` (TEXT PRIMARY KEY)
+    - `name` (TEXT NOT NULL)
+    - `gradeLevel` (TEXT NOT NULL DEFAULT 'Grade 3')
+    - `section` (TEXT)
+    - `schoolYear` (TEXT NOT NULL)
+    - `description` (TEXT)
+    - `teacherId` (TEXT NOT NULL, FOREIGN KEY references `teachers.id`)
+    - `status` (TEXT NOT NULL DEFAULT 'Active')
+    - `createdAt` (TEXT DEFAULT datetime('now'))
+    - `updatedAt` (TEXT DEFAULT datetime('now'))
+
+* **Prisma Changes**:
+  * Added `model Classroom` and `classrooms Classroom[]` relation to `Teacher` in `prisma/schema.prisma`.
+
+* **Dependencies Added**:
+  * None (reused existing Plan A stack: `better-sqlite3`, `axios`, `jsonwebtoken`, `lucide-react`, `uuid`).
+
+---
+
+### Problems & Solutions
+
+1. **Problem / Error**:
+   Port mismatch during cross-module automated testing (Module 2 test defaulted to port 3005 and Module 3 test defaulted to port 3006, while server ran on port 3000).
+   * **Cause**: Earlier individual test scripts had hardcoded test ports.
+   * **Solution**: Updated test scripts to use `process.env.TEST_BASE_URL || 'http://127.0.0.1:3000'`, allowing test suites to execute seamlessly across any development or staging port.
+   * **Result**: All test suites ran concurrently against the active production server with zero connection errors.
+
+2. **Problem / Error**:
+   Potential duplicate active classroom creation when a teacher submits identical names.
+   * **Cause**: Without backend uniqueness checks, double clicks or re-submissions could create redundant active classes.
+   * **Solution**: Added duplicate detection in `POST /api/classrooms` and `PUT /api/classrooms/[id]` that queries for active classrooms with the same name and school year under the same teacher ID, returning HTTP 409 Conflict.
+   * **Result**: Duplicate submissions are prevented cleanly and return understandable error feedback.
+
+---
+
+### Testing
+
+* **Automated Tests Executed (`test_classroom_management_module.mjs`)**:
+  1. **Test 1**: Unauthenticated `GET /api/classrooms` -> HTTP 401 Unauthorized (**PASS**).
+  2. **Test 2**: Unauthenticated visit to `/classrooms` -> Redirects to `/login?redirect=%2Fclassrooms` (**PASS**).
+  3. **Test 3**: Database schema verification (columns: id, name, gradeLevel, section, schoolYear, teacherId, status, createdAt, updatedAt) (**PASS**).
+  4. **Test 4**: Authenticated classroom listing and status counts retrieval (**PASS**).
+  5. **Test 5**: Validation: Missing classroom name returns HTTP 400 Bad Request (**PASS**).
+  6. **Test 6**: Validation: Missing school year returns HTTP 400 Bad Request (**PASS**).
+  7. **Test 7**: Successful classroom creation returns HTTP 201 Created and persists in SQLite (**PASS**).
+  8. **Test 8**: Duplicate active classroom creation for same teacher returns HTTP 409 Conflict (**PASS**).
+  9. **Test 9**: Single classroom details retrieval (`GET /api/classrooms/[id]`) (**PASS**).
+  10. **Test 10**: Invalid classroom ID returns HTTP 404 Not Found (**PASS**).
+  11. **Test 11**: Edit classroom information (`PUT /api/classrooms/[id]`) (**PASS**).
+  12. **Test 12**: Soft archiving (`PATCH /api/classrooms/[id]/archive`) sets status to `'Archived'` without deleting data (**PASS**).
+  13. **Test 13**: Re-archiving an already archived classroom returns HTTP 400 Bad Request (**PASS**).
+  14. **Test 14**: Restoring classroom sets status back to `'Active'` (**PASS**).
+  15. **Test 15**: Search filtering by section keyword locates classroom (**PASS**).
+  16. **Test 16**: Multi-tenant authorization: Teacher 2 cannot view, edit, or archive Teacher 1's classroom (**PASS**).
+  17. **Test 17**: Authenticated HTML page render for `/classrooms` returns HTTP 200 OK (**PASS**).
+  - Overall automated result: **50/50 tests passed (100%)**.
+
+* **Regression Tests Executed**:
+  - `test_dashboard_module.mjs`: **19/19 passed (100%)**.
+  - `test_parent_management_module.mjs`: **31/31 passed (100%)**.
+  - Next.js Production Build (`npm run build`): **Compiled successfully in 5.2s, 0 TypeScript/lint errors**.
+
+* **Visual & Interactive Browser Subagent Testing**:
+  1. **Login & Nav**: Logged in as teacher `reset.teacher@school.edu.ph` and navigated to `/classrooms`.
+  2. **Empty State**: Verified clean empty state with prompt and "+ Create Classroom" button.
+  3. **Classroom Creation**: Created "Grade 3 - Section Diamond" and "Grade 3 - Section Emerald".
+  4. **Details Modal**: Inspected details modal for Section Diamond (Grade 3, SY 2026-2027, teacher profile, student notice).
+  5. **Editing**: Updated classroom description and verified instant table update.
+  6. **Archiving & Filter Tabs**: Archived Section Emerald via confirmation modal; verified tab counts updated to `All: 2`, `Active: 1`, `Archived: 1`. Verified switching tabs filtered the table accordingly.
+  - Video recording generated: `classroom_mgmt_demo_1788678332448.webp`.
+  - Screenshots:
+    - Empty state: `classrooms_empty_state_1788678449701.png`.
+    - Details modal: `classroom_details_modal_1788678634618.png`.
+    - Final roster: `classrooms_final_roster_1788678855550.png`.
+  - Status: **PASSED (100%)**.
+
+---
+
+### Current Status
+
+* **Module 1 (Authentication Module)**: **100% Complete & Operational**.
+* **Module 2 (Teacher Dashboard Module)**: **100% Complete & Operational**.
+* **Module 3 (Parent Management Module)**: **100% Complete & Operational**.
+* **Module 4 (Classroom Management Module)**: **100% Complete & Operational**.
+* Application builds cleanly (`npm run build`) and runs locally at `http://localhost:3000`.
+
+---
+
+### Deferred Functionality & Next Steps
+
+* **Module 5: Student Management Module** will implement student enrollment, pupil profiles, and classroom student assignment when instructed.
+
 
 
 

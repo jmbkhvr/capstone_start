@@ -82,6 +82,23 @@ function getDatabase(): Database.Database {
       updatedAt TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (teacherId) REFERENCES teachers(id) ON DELETE SET NULL
     );
+
+    -- CLASSROOMS TABLE (MODULE 4: CLASSROOM MANAGEMENT)
+    -- Stores teacher-managed classroom sections for Grade 3 pupils.
+    -- Each classroom belongs to a specific teacher and has a status ('Active' or 'Archived').
+    CREATE TABLE IF NOT EXISTS classrooms (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      gradeLevel TEXT NOT NULL DEFAULT 'Grade 3',
+      section TEXT,
+      schoolYear TEXT NOT NULL,
+      description TEXT,
+      teacherId TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'Active',
+      createdAt TEXT DEFAULT (datetime('now')),
+      updatedAt TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (teacherId) REFERENCES teachers(id) ON DELETE CASCADE
+    );
   `);
 
   return dbInstance;

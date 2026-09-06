@@ -59,6 +59,9 @@ model Teacher {
 
   // Relation to parent registration requests managed by this teacher (Module 3).
   parents        Parent[]
+
+  // Relation to classrooms managed by this teacher (Module 4).
+  classrooms     Classroom[]
 }
 
 // ============================================================================
@@ -152,3 +155,51 @@ model Parent {
   // Relation to Teacher model.
   teacher         Teacher? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
 }
+
+// ============================================================================
+// CLASSROOM MODEL (MODULE 4: CLASSROOM MANAGEMENT)
+// ============================================================================
+// What this model does:
+// Represents an academic classroom section created and managed by a teacher.
+// Stores information including classroom name, grade level (Grade 3), section,
+// school year, optional description, status ('Active' | 'Archived'), and ownership.
+//
+// Archiving Note:
+// Classrooms use soft archiving (status = 'Archived') rather than permanent hard
+// deletion so that historical student assessments and academic records are preserved.
+// ============================================================================
+model Classroom {
+  // Unique internal database ID generated as a UUID string.
+  id          String   @id @default(uuid())
+
+  // Descriptive name of the classroom (e.g. "Grade 3 - Section Diamond").
+  name        String
+
+  // Grade level of the classroom (defaults to "Grade 3").
+  gradeLevel  String   @default("Grade 3")
+
+  // Classroom section label (e.g. "Diamond", "Mabini").
+  section     String?
+
+  // Academic school year (e.g. "2026-2027").
+  schoolYear  String
+
+  // Optional description or notes for the classroom.
+  description String?
+
+  // Foreign key referencing the teacher who owns and manages this classroom.
+  teacherId   String
+
+  // Lifecycle status: 'Active' or 'Archived'.
+  status      String   @default("Active")
+
+  // Creation timestamp recorded when classroom was created.
+  createdAt   DateTime @default(now())
+
+  // Timestamp updated automatically whenever classroom info changes.
+  updatedAt   DateTime @updatedAt
+
+  // Relation to the owning Teacher account.
+  teacher     Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+}
+
