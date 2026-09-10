@@ -54,9 +54,9 @@ export async function GET(
     // ------------------------------------------------------------------------
     // Step 2: Query database for the reading material
     // ------------------------------------------------------------------------
-    const material = db
-      .prepare('SELECT * FROM reading_materials WHERE id = ?')
-      .get(id) as any;
+    const material = await db.readingMaterial.findUnique({
+      where: { id: id }
+    });
 
     if (!material) {
       return NextResponse.json(
@@ -120,9 +120,9 @@ export async function PUT(
     // ------------------------------------------------------------------------
     // Step 2: Check if material exists and belongs to the authenticated teacher
     // ------------------------------------------------------------------------
-    const existing = db
-      .prepare('SELECT * FROM reading_materials WHERE id = ?')
-      .get(id) as any;
+    const existing = await db.readingMaterial.findUnique({
+      where: { id: id }
+    });
 
     if (!existing) {
       return NextResponse.json(
@@ -191,37 +191,19 @@ export async function PUT(
     }
 
     // ------------------------------------------------------------------------
-    // Step 6: Persist updates into SQLite
+    // Step 6: Persist updates into PostgreSQL
     // ------------------------------------------------------------------------
-    const nowIso = new Date().toISOString();
-
-    db.prepare(`
-      UPDATE reading_materials
-      SET
-        title = ?,
-        description = ?,
-        content = ?,
-        wordCount = ?,
-        difficulty = ?,
-        gradeLevel = ?,
-        updatedAt = ?
-      WHERE id = ? AND teacherId = ?
-    `).run(
-      title,
-      description || null,
-      rawContent,
-      wordCount,
-      validatedDifficulty,
-      validatedGradeLevel,
-      nowIso,
-      id,
-      teacher.id
-    );
-
-    // Retrieve updated record
-    const updatedMaterial = db
-      .prepare('SELECT * FROM reading_materials WHERE id = ?')
-      .get(id);
+    const updatedMaterial = await db.readingMaterial.update({
+      where: { id: id, teacherId: teacher.id },
+      data: {
+        title: title,
+        description: description || null,
+        content: rawContent,
+        wordCount: wordCount,
+        difficulty: validatedDifficulty,
+        gradeLevel: validatedGradeLevel,
+      }
+    });
 
     return NextResponse.json({
       success: true,

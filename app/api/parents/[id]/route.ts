@@ -46,25 +46,29 @@ export async function GET(
     // ------------------------------------------------------------------------
     // Step 2: Query the parent record by unique ID
     // ------------------------------------------------------------------------
-    const parent = db
-      .prepare(
-        `SELECT 
-          id, 
-          fullName, 
-          email, 
-          contactNumber, 
-          childName, 
-          childGradeLevel, 
-          childSection, 
-          teacherId, 
-          status, 
-          rejectionReason, 
-          createdAt, 
-          updatedAt
-        FROM parents 
-        WHERE id = ? AND (teacherId = ? OR teacherId IS NULL)`
-      )
-      .get(id, teacher.id) as any;
+    const parent = await db.parent.findFirst({
+      where: {
+        id: id,
+        OR: [
+          { teacherId: teacher.id },
+          { teacherId: null }
+        ]
+      },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        contactNumber: true,
+        childName: true,
+        childGradeLevel: true,
+        childSection: true,
+        teacherId: true,
+        status: true,
+        rejectionReason: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
 
     if (!parent) {
       return NextResponse.json(

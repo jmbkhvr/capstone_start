@@ -51,23 +51,17 @@ export async function GET(
     // ------------------------------------------------------------------------
     // Step 2: Query classroom record strictly owned by this teacher
     // ------------------------------------------------------------------------
-    const classroom = db
-      .prepare(
-        `SELECT 
-          id, 
-          name, 
-          gradeLevel, 
-          section, 
-          schoolYear, 
-          description, 
-          teacherId, 
-          status, 
-          createdAt, 
-          updatedAt
-        FROM classrooms 
-        WHERE id = ? AND teacherId = ?`
-      )
-      .get(id, teacher.id) as any;
+    const classroom = await db.classroom.findUnique({
+      where: {
+        id: id,
+        teacherId: teacher.id
+      },
+      include: {
+        _count: {
+          select: { students: true }
+        }
+      }
+    });
 
     if (!classroom) {
       return NextResponse.json(
@@ -79,28 +73,15 @@ export async function GET(
     // ------------------------------------------------------------------------
     // Step 3: Check student count (prepared for Module 5: Student Management)
     // ------------------------------------------------------------------------
-    let studentCount = 0;
-    const hasStudentsTable = Boolean(
-      db
-        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='students'")
-        .get()
-    );
-
-    if (hasStudentsTable) {
-      const studentResult = db
-        .prepare(
-          `SELECT COUNT(*) as count FROM students WHERE classroomId = ? AND teacherId = ?`
-        )
-        .get(classroom.id, teacher.id) as { count: number } | undefined;
-      studentCount = studentResult?.count || 0;
-    }
+    const studentCount = classroom._count.students;
+    const { _count, ...classroomData } = classroom;
 
     // ------------------------------------------------------------------------
     // Step 4: Return classroom details response
     // ------------------------------------------------------------------------
     return NextResponse.json({
       classroom: {
-        ...classroom,
+        ...classroomData,
         studentCount,
         teacherName: teacher.fullName,
       },
@@ -150,9 +131,10 @@ export async function PUT(
     // ------------------------------------------------------------------------
     // Step 2: Verify classroom exists and belongs to the authenticated teacher
     // ------------------------------------------------------------------------
-    const existingClassroom = db
-      .prepare('SELECT id, status FROM classrooms WHERE id = ? AND teacherId = ?')
-      .get(id, teacher.id) as { id: string; status: string } | undefined;
+    const existingClassroom = await db.classroom.findUnique({
+      where: { id: id, teacherId: teacher.id },
+      select: { id: true, status: true }
+    });
 
     if (!existingClassroom) {
       return NextResponse.json(
@@ -218,12 +200,16 @@ export async function PUT(
     // ------------------------------------------------------------------------
     // Step 4: Check if new name conflicts with another active classroom of this teacher
     // ------------------------------------------------------------------------
-    const duplicateConflict = db
-      .prepare(
-        `SELECT id FROM classrooms 
-         WHERE teacherId = ? AND LOWER(name) = LOWER(?) AND schoolYear = ? AND id != ? AND status = 'Active'`
-      )
-      .get(teacher.id, cleanName, cleanSchoolYear, id);
+    const duplicateConflict = await db.classroom.findFirst({
+      where: {
+        teacherId: teacher.id,
+        name: { equals: cleanName, mode: 'insensitive' },
+        schoolYear: cleanSchoolYear,
+        id: { not: id },
+        status: 'Active'
+      },
+      select: { id: true }
+    });
 
     if (duplicateConflict) {
       return NextResponse.json(
@@ -237,35 +223,16 @@ export async function PUT(
     // ------------------------------------------------------------------------
     // Step 5: Update database record
     // ------------------------------------------------------------------------
-    const now = new Date().toISOString();
-
-    db.prepare(
-      `UPDATE classrooms 
-       SET 
-         name = ?, 
-         gradeLevel = ?, 
-         section = ?, 
-         schoolYear = ?, 
-         description = ?, 
-         updatedAt = ?
-       WHERE id = ? AND teacherId = ?`
-    ).run(
-      cleanName,
-      cleanGradeLevel,
-      cleanSection || null,
-      cleanSchoolYear,
-      cleanDescription || null,
-      now,
-      id,
-      teacher.id
-    );
-
-    // ------------------------------------------------------------------------
-    // Step 6: Fetch updated record
-    // ------------------------------------------------------------------------
-    const updatedClassroom = db
-      .prepare('SELECT * FROM classrooms WHERE id = ?')
-      .get(id) as any;
+    const updatedClassroom = await db.classroom.update({
+      where: { id: id, teacherId: teacher.id },
+      data: {
+        name: cleanName,
+        gradeLevel: cleanGradeLevel,
+        section: cleanSection || null,
+        schoolYear: cleanSchoolYear,
+        description: cleanDescription || null,
+      }
+    });
 
     // ------------------------------------------------------------------------
     // Step 7: Return success response

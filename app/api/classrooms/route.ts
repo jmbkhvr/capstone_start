@@ -48,121 +48,67 @@ export async function GET(request: NextRequest) {
     const searchQuery = (searchParams.get('search') || '').trim();
 
     // ------------------------------------------------------------------------
-    // Step 3: Verify the classrooms table exists in the database
-    // ------------------------------------------------------------------------
-    // Check the SQLite master catalog to prevent crashes if table is missing.
-    const tableExists = db
-      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='classrooms'")
-      .get();
 
-    if (!tableExists) {
-      return NextResponse.json({
-        classrooms: [],
-        counts: { all: 0, active: 0, archived: 0 },
-      });
-    }
 
     // ------------------------------------------------------------------------
     // Step 4: Compute aggregate status counts for this authenticated teacher
     // ------------------------------------------------------------------------
     // This provides the numbers displayed on the "All", "Active", and "Archived" tabs.
-    const countRows = db
-      .prepare(
-        `SELECT status, COUNT(*) as count 
-         FROM classrooms 
-         WHERE teacherId = ? 
-         GROUP BY status`
-      )
-      .all(teacher.id) as Array<{ status: string; count: number }>;
-
-    const counts = {
-      all: 0,
-      active: 0,
-      archived: 0,
-    };
-
-    countRows.forEach((row) => {
-      const lower = row.status.toLowerCase();
-      if (lower === 'active') {
-        counts.active = row.count;
-      } else if (lower === 'archived') {
-        counts.archived = row.count;
-      }
-      counts.all += row.count;
+    const countRows = await db.classroom.groupBy({
+      by: ['status'],
+      where: { teacherId: teacher.id },
+      _count: { _all: true }
     });
 
-    // ------------------------------------------------------------------------
-    // Step 5: Check if students table exists to calculate student counts per class
-    // ------------------------------------------------------------------------
-    // Future Module 5 will add students. If students table exists, we count them.
-    // Otherwise, default studentCount to 0 safely without errors.
-    const hasStudentsTable = Boolean(
-      db
-        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='students'")
-        .get()
-    );
+    const counts = { all: 0, active: 0, archived: 0 };
+    for (const row of countRows) {
+      const lower = row.status.toLowerCase();
+      if (lower === 'active') counts.active = row._count._all;
+      else if (lower === 'archived') counts.archived = row._count._all;
+      counts.all += row._count._all;
+    }
 
     // ------------------------------------------------------------------------
-    // Step 6: Construct parameterized SQL query for classrooms
+    // Step 6: Construct Prisma query for classrooms
     // ------------------------------------------------------------------------
-    let query = `
-      SELECT 
-        id, 
-        name, 
-        gradeLevel, 
-        section, 
-        schoolYear, 
-        description, 
-        teacherId, 
-        status, 
-        createdAt, 
-        updatedAt
-      FROM classrooms
-      WHERE teacherId = ?
-    `;
-
-    const queryParams: any[] = [teacher.id];
-
-    // Apply status filter if not 'All'
+    const whereClause: any = { teacherId: teacher.id };
+    
     if (statusFilter !== 'All') {
-      query += ` AND status = ?`;
-      queryParams.push(statusFilter);
+      whereClause.status = statusFilter;
     }
 
-    // Apply search filter if query text is provided
     if (searchQuery.length > 0) {
-      query += ` AND (
-        name LIKE ? OR 
-        gradeLevel LIKE ? OR 
-        schoolYear LIKE ? OR 
-        section LIKE ? OR
-        description LIKE ?
-      )`;
-      const wild = `%${searchQuery}%`;
-      queryParams.push(wild, wild, wild, wild, wild);
+      whereClause.AND = [
+        {
+          OR: [
+            { name: { contains: searchQuery, mode: 'insensitive' } },
+            { gradeLevel: { contains: searchQuery, mode: 'insensitive' } },
+            { schoolYear: { contains: searchQuery, mode: 'insensitive' } },
+            { section: { contains: searchQuery, mode: 'insensitive' } },
+            { description: { contains: searchQuery, mode: 'insensitive' } },
+          ]
+        }
+      ];
     }
 
-    // Order by creation date descending (newest first)
-    query += ` ORDER BY createdAt DESC`;
-
-    const classrooms = db.prepare(query).all(...queryParams) as Array<any>;
+    const classrooms = await db.classroom.findMany({
+      where: whereClause,
+      include: {
+        _count: {
+          select: { students: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
 
     // ------------------------------------------------------------------------
     // Step 7: Attach student counts to each classroom
     // ------------------------------------------------------------------------
     const classroomsWithStudentCounts = classrooms.map((classroom) => {
-      let studentCount = 0;
-      if (hasStudentsTable) {
-        const studentResult = db
-          .prepare(
-            `SELECT COUNT(*) as count FROM students WHERE classroomId = ? AND teacherId = ?`
-          )
-          .get(classroom.id, teacher.id) as { count: number } | undefined;
-        studentCount = studentResult?.count || 0;
-      }
-
+      const studentCount = classroom._count.students;
+      const { _count, ...rest } = classroom;
       return {
-        ...classroom,
+        ...rest,
         studentCount,
         teacherName: teacher.fullName,
       };
@@ -267,12 +213,15 @@ export async function POST(request: NextRequest) {
     // ------------------------------------------------------------------------
     // Prevents teachers from accidentally creating two active classrooms with
     // the exact same name for the same school year.
-    const existingClassroom = db
-      .prepare(
-        `SELECT id FROM classrooms 
-         WHERE teacherId = ? AND LOWER(name) = LOWER(?) AND schoolYear = ? AND status = 'Active'`
-      )
-      .get(teacher.id, cleanName, cleanSchoolYear);
+    const existingClassroom = await db.classroom.findFirst({
+      where: {
+        teacherId: teacher.id,
+        name: { equals: cleanName, mode: 'insensitive' },
+        schoolYear: cleanSchoolYear,
+        status: 'Active'
+      },
+      select: { id: true }
+    });
 
     if (existingClassroom) {
       return NextResponse.json(
@@ -283,43 +232,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ------------------------------------------------------------------------
-    // Step 5: Insert the new classroom into the database
-    // ------------------------------------------------------------------------
-    const classroomId = uuidv4();
-    const now = new Date().toISOString();
-
-    db.prepare(
-      `INSERT INTO classrooms (
-        id, 
-        name, 
-        gradeLevel, 
-        section, 
-        schoolYear, 
-        description, 
-        teacherId, 
-        status, 
-        createdAt, 
-        updatedAt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Active', ?, ?)`
-    ).run(
-      classroomId,
-      cleanName,
-      cleanGradeLevel,
-      cleanSection || null,
-      cleanSchoolYear,
-      cleanDescription || null,
-      teacher.id,
-      now,
-      now
-    );
-
-    // ------------------------------------------------------------------------
-    // Step 6: Fetch the newly created classroom record
-    // ------------------------------------------------------------------------
-    const newClassroom = db
-      .prepare('SELECT * FROM classrooms WHERE id = ?')
-      .get(classroomId) as any;
+    const newClassroom = await db.classroom.create({
+      data: {
+        name: cleanName,
+        gradeLevel: cleanGradeLevel,
+        section: cleanSection || null,
+        schoolYear: cleanSchoolYear,
+        description: cleanDescription || null,
+        teacherId: teacher.id,
+        status: 'Active'
+      }
+    });
 
     // ------------------------------------------------------------------------
     // Step 7: Return success response with HTTP 201 Created

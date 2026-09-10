@@ -49,19 +49,10 @@ export async function PATCH(
     // ------------------------------------------------------------------------
     // Step 2: Verify student exists and belongs to authenticated teacher
     // ------------------------------------------------------------------------
-    const student = db
-      .prepare(
-        `SELECT id, firstName, lastName, fullName, classroomId 
-         FROM students 
-         WHERE id = ? AND teacherId = ?`
-      )
-      .get(id, teacher.id) as {
-      id: string;
-      firstName: string;
-      lastName: string;
-      fullName: string;
-      classroomId: string;
-    } | undefined;
+    const student = await db.student.findUnique({
+      where: { id: id, teacherId: teacher.id },
+      select: { id: true, firstName: true, lastName: true, fullName: true, classroomId: true }
+    });
 
     if (!student) {
       return NextResponse.json(
@@ -107,17 +98,10 @@ export async function PATCH(
     // ------------------------------------------------------------------------
     // Step 4: Verify destination classroom belongs to authenticated teacher
     // ------------------------------------------------------------------------
-    const destinationClassroom = db
-      .prepare(
-        `SELECT id, name, status 
-         FROM classrooms 
-         WHERE id = ? AND teacherId = ?`
-      )
-      .get(targetClassroomId, teacher.id) as {
-      id: string;
-      name: string;
-      status: string;
-    } | undefined;
+    const destinationClassroom = await db.classroom.findUnique({
+      where: { id: targetClassroomId, teacherId: teacher.id },
+      select: { id: true, name: true, status: true }
+    });
 
     if (!destinationClassroom) {
       return NextResponse.json(
@@ -136,12 +120,16 @@ export async function PATCH(
     // ------------------------------------------------------------------------
     // Step 5: Check for duplicate student name in destination classroom
     // ------------------------------------------------------------------------
-    const duplicateInDest = db
-      .prepare(
-        `SELECT id FROM students 
-         WHERE teacherId = ? AND classroomId = ? AND LOWER(firstName) = LOWER(?) AND LOWER(lastName) = LOWER(?) AND status = 'Active'`
-      )
-      .get(teacher.id, targetClassroomId, student.firstName, student.lastName);
+    const duplicateInDest = await db.student.findFirst({
+      where: {
+        teacherId: teacher.id,
+        classroomId: targetClassroomId,
+        firstName: { equals: student.firstName, mode: 'insensitive' },
+        lastName: { equals: student.lastName, mode: 'insensitive' },
+        status: 'Active'
+      },
+      select: { id: true }
+    });
 
     if (duplicateInDest) {
       return NextResponse.json(
@@ -155,29 +143,20 @@ export async function PATCH(
     // ------------------------------------------------------------------------
     // Step 6: Update classroom assignment in database
     // ------------------------------------------------------------------------
-    const now = new Date().toISOString();
+    const updatedStudent = await db.student.update({
+      where: { id: id, teacherId: teacher.id },
+      data: { classroomId: targetClassroomId },
+      include: {
+        classroom: { select: { name: true } },
+        parent: { select: { fullName: true } }
+      }
+    });
 
-    db.prepare(
-      `UPDATE students 
-       SET classroomId = ?, updatedAt = ? 
-       WHERE id = ? AND teacherId = ?`
-    ).run(targetClassroomId, now, id, teacher.id);
-
-    // ------------------------------------------------------------------------
-    // Step 7: Fetch updated student record
-    // ------------------------------------------------------------------------
-    const updatedStudent = db
-      .prepare(
-        `SELECT 
-          s.*,
-          c.name as classroomName,
-          p.fullName as parentName
-         FROM students s
-         LEFT JOIN classrooms c ON s.classroomId = c.id
-         LEFT JOIN parents p ON s.parentId = p.id
-         WHERE s.id = ?`
-      )
-      .get(id) as any;
+    const formattedUpdatedStudent = {
+      ...updatedStudent,
+      classroomName: updatedStudent.classroom?.name || null,
+      parentName: updatedStudent.parent?.fullName || null
+    };
 
     // ------------------------------------------------------------------------
     // Step 8: Return success response
@@ -185,7 +164,7 @@ export async function PATCH(
     return NextResponse.json({
       success: true,
       message: `Student "${student.fullName}" moved to "${destinationClassroom.name}" successfully.`,
-      student: updatedStudent,
+      student: formattedUpdatedStudent,
     });
   } catch (error) {
     // ------------------------------------------------------------------------

@@ -44,9 +44,9 @@ export async function PATCH(
     // ------------------------------------------------------------------------
     // Step 2: Verify material exists and belongs to this teacher
     // ------------------------------------------------------------------------
-    const material = db
-      .prepare('SELECT * FROM reading_materials WHERE id = ?')
-      .get(id) as any;
+    const material = await db.readingMaterial.findUnique({
+      where: { id: id }
+    });
 
     if (!material) {
       return NextResponse.json(
@@ -81,15 +81,12 @@ export async function PATCH(
     }
 
     // ------------------------------------------------------------------------
-    // Step 4: Update SQLite record
+    // Step 4: Update PostgreSQL record
     // ------------------------------------------------------------------------
-    const nowIso = new Date().toISOString();
-
-    db.prepare(`
-      UPDATE reading_materials
-      SET status = ?, updatedAt = ?
-      WHERE id = ? AND teacherId = ?
-    `).run(newStatus, nowIso, id, teacher.id);
+    await db.readingMaterial.update({
+      where: { id: id, teacherId: teacher.id },
+      data: { status: newStatus }
+    });
 
     const actionWord = newStatus === 'Archived' ? 'archived' : 'restored';
 

@@ -48,9 +48,10 @@ export async function PATCH(
     // ------------------------------------------------------------------------
     // Step 2: Look up classroom record owned by this teacher
     // ------------------------------------------------------------------------
-    const classroom = db
-      .prepare('SELECT id, name, status FROM classrooms WHERE id = ? AND teacherId = ?')
-      .get(id, teacher.id) as { id: string; name: string; status: string } | undefined;
+    const classroom = await db.classroom.findUnique({
+      where: { id: id, teacherId: teacher.id },
+      select: { id: true, name: true, status: true }
+    });
 
     if (!classroom) {
       return NextResponse.json(
@@ -89,20 +90,10 @@ export async function PATCH(
     // ------------------------------------------------------------------------
     // Step 4: Update status in database
     // ------------------------------------------------------------------------
-    const now = new Date().toISOString();
-
-    db.prepare(
-      `UPDATE classrooms 
-       SET status = ?, updatedAt = ? 
-       WHERE id = ? AND teacherId = ?`
-    ).run(targetStatus, now, id, teacher.id);
-
-    // ------------------------------------------------------------------------
-    // Step 5: Fetch updated classroom record
-    // ------------------------------------------------------------------------
-    const updatedClassroom = db
-      .prepare('SELECT * FROM classrooms WHERE id = ?')
-      .get(id) as any;
+    const updatedClassroom = await db.classroom.update({
+      where: { id: id, teacherId: teacher.id },
+      data: { status: targetStatus }
+    });
 
     const message =
       targetStatus === 'Archived'

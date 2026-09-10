@@ -44,87 +44,78 @@ export async function GET(request: NextRequest) {
     const searchQuery = (searchParams.get('search') || '').trim();
 
     // ------------------------------------------------------------------------
-    // Step 3: Verify the parents table exists in the database
-    // ------------------------------------------------------------------------
-    // Check SQLite master catalog to prevent query errors if table is not yet initialized.
-    const hasTable = db
-      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='parents'")
-      .get();
-
-    if (!hasTable) {
-      return NextResponse.json({
-        parents: [],
-        counts: { all: 0, pending: 0, approved: 0, rejected: 0 },
-      });
-    }
-
-    // ------------------------------------------------------------------------
     // Step 4: Compute aggregate status counts for the authenticated teacher
     // ------------------------------------------------------------------------
     // Scoped to parents assigned to this teacher or unassigned Grade 3 applicants.
-    const countRows = db
-      .prepare(
-        `SELECT status, COUNT(*) as count 
-         FROM parents 
-         WHERE (teacherId = ? OR teacherId IS NULL)
-         GROUP BY status`
-      )
-      .all(teacher.id) as Array<{ status: string; count: number }>;
-
-    const counts = {
-      all: 0,
-      pending: 0,
-      approved: 0,
-      rejected: 0,
-    };
-
-    countRows.forEach((row) => {
-      const lower = row.status.toLowerCase();
-      if (lower === 'pending') counts.pending = row.count;
-      else if (lower === 'approved') counts.approved = row.count;
-      else if (lower === 'rejected') counts.rejected = row.count;
-      counts.all += row.count;
+    const countRows = await db.parent.groupBy({
+      by: ['status'],
+      where: {
+        OR: [
+          { teacherId: teacher.id },
+          { teacherId: null }
+        ]
+      },
+      _count: { _all: true }
     });
 
-    // ------------------------------------------------------------------------
-    // Step 5: Construct parameterized SQL query for filtered parent records
-    // ------------------------------------------------------------------------
-    let query = `
-      SELECT 
-        id, 
-        fullName, 
-        email, 
-        contactNumber, 
-        childName, 
-        childGradeLevel, 
-        childSection, 
-        teacherId, 
-        status, 
-        rejectionReason, 
-        createdAt, 
-        updatedAt
-      FROM parents
-      WHERE (teacherId = ? OR teacherId IS NULL)
-    `;
-    const params: any[] = [teacher.id];
+    const counts = { all: 0, pending: 0, approved: 0, rejected: 0 };
+    for (const row of countRows) {
+      const lower = row.status.toLowerCase();
+      if (lower === 'pending') counts.pending = row._count._all;
+      else if (lower === 'approved') counts.approved = row._count._all;
+      else if (lower === 'rejected') counts.rejected = row._count._all;
+      counts.all += row._count._all;
+    }
 
-    // Apply status filter if not 'All'
+    // ------------------------------------------------------------------------
+    // Step 5: Construct Prisma query for filtered parent records
+    // ------------------------------------------------------------------------
+    const whereClause: any = {
+      OR: [
+        { teacherId: teacher.id },
+        { teacherId: null }
+      ]
+    };
+
     if (statusFilter !== 'All' && ['Pending', 'Approved', 'Rejected'].includes(statusFilter)) {
-      query += ` AND status = ?`;
-      params.push(statusFilter);
+      whereClause.status = statusFilter;
     }
 
-    // Apply search filter across parent name, email, and child name
     if (searchQuery.length > 0) {
-      query += ` AND (fullName LIKE ? OR email LIKE ? OR childName LIKE ?)`;
-      const pattern = `%${searchQuery}%`;
-      params.push(pattern, pattern, pattern);
+      whereClause.AND = [
+        {
+          OR: [
+            { fullName: { contains: searchQuery, mode: 'insensitive' } },
+            { email: { contains: searchQuery, mode: 'insensitive' } },
+            { childName: { contains: searchQuery, mode: 'insensitive' } }
+          ]
+        }
+      ];
     }
 
-    // Order results: Pending registrations first, then newest first
-    query += ` ORDER BY CASE WHEN status = 'Pending' THEN 0 ELSE 1 END, createdAt DESC`;
+    const parents = await db.parent.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        contactNumber: true,
+        childName: true,
+        childGradeLevel: true,
+        childSection: true,
+        teacherId: true,
+        status: true,
+        rejectionReason: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
 
-    const parents = db.prepare(query).all(...params);
+    parents.sort((a, b) => {
+      if (a.status === 'Pending' && b.status !== 'Pending') return -1;
+      if (a.status !== 'Pending' && b.status === 'Pending') return 1;
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
 
     // ------------------------------------------------------------------------
     // Step 6: Return sanitized parent list and status counts

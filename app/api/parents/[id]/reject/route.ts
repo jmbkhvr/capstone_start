@@ -57,14 +57,15 @@ export async function PATCH(
     // ------------------------------------------------------------------------
     // Step 3: Verify that the parent record exists in the database
     // ------------------------------------------------------------------------
-    const parent = db
-      .prepare('SELECT id, fullName, email, status FROM parents WHERE id = ?')
-      .get(id) as {
-      id: string;
-      fullName: string;
-      email: string;
-      status: string;
-    } | undefined;
+    const parent = await db.parent.findUnique({
+      where: { id: id },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        status: true,
+      }
+    });
 
     if (!parent) {
       return NextResponse.json(
@@ -86,15 +87,14 @@ export async function PATCH(
     // ------------------------------------------------------------------------
     // Step 5: Update status to 'Rejected' and record the rejection reason
     // ------------------------------------------------------------------------
-    db.prepare(`
-      UPDATE parents 
-      SET 
-        status = 'Rejected',
-        rejectionReason = ?,
-        teacherId = ?,
-        updatedAt = datetime('now')
-      WHERE id = ?
-    `).run(reason, teacher.id, id);
+    await db.parent.update({
+      where: { id: id },
+      data: {
+        status: 'Rejected',
+        rejectionReason: reason,
+        teacherId: teacher.id,
+      }
+    });
 
     // ------------------------------------------------------------------------
     // Step 6: Return successful rejection response

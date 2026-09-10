@@ -86,52 +86,31 @@ export async function GET(request: NextRequest) {
     const sortOrder = (searchParams.get('order') || 'desc').toLowerCase() === 'asc' ? 'ASC' : 'DESC';
 
     // ------------------------------------------------------------------------
-    // Step 3: Verify the reading_materials table exists
+    // Step 4: Build Prisma query conditions scoped to the authenticated teacher
     // ------------------------------------------------------------------------
-    const tableCheck = db
-      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='reading_materials'")
-      .get();
+    const whereClause: any = { teacherId: teacher.id };
 
-    if (!tableCheck) {
-      return NextResponse.json({
-        success: true,
-        materials: [],
-        counts: { all: 0, active: 0, archived: 0 },
-      });
-    }
-
-    // ------------------------------------------------------------------------
-    // Step 4: Build dynamic SQL query conditions scoped to the authenticated teacher
-    // ------------------------------------------------------------------------
-    const conditions: string[] = ['teacherId = ?'];
-    const queryParams: any[] = [teacher.id];
-
-    // Status filter: 'All', 'Active', or 'Archived'
     if (statusFilter !== 'All') {
-      conditions.push('status = ?');
-      queryParams.push(statusFilter);
+      whereClause.status = statusFilter;
     }
-
-    // Grade level filter: e.g. 'Grade 1', 'Grade 3', etc.
     if (gradeFilter !== 'All') {
-      conditions.push('gradeLevel = ?');
-      queryParams.push(gradeFilter);
+      whereClause.gradeLevel = gradeFilter;
     }
-
-    // Difficulty filter: 'Easy', 'Moderate', or 'Difficult'
     if (difficultyFilter !== 'All') {
-      conditions.push('difficulty = ?');
-      queryParams.push(difficultyFilter);
+      whereClause.difficulty = difficultyFilter;
     }
-
-    // Keyword search: matches against title, description, or content
     if (searchQuery.length > 0) {
-      conditions.push('(title LIKE ? OR description LIKE ? OR content LIKE ?)');
-      const wildQuery = `%${searchQuery}%`;
-      queryParams.push(wildQuery, wildQuery, wildQuery);
+      whereClause.AND = [
+        {
+          OR: [
+            { title: { contains: searchQuery, mode: 'insensitive' } },
+            { description: { contains: searchQuery, mode: 'insensitive' } },
+            { content: { contains: searchQuery, mode: 'insensitive' } },
+          ]
+        }
+      ];
     }
 
-    // Determine safe sorting column to prevent SQL injection
     const allowedSortColumns: Record<string, string> = {
       title: 'title',
       wordCount: 'wordCount',
@@ -141,51 +120,32 @@ export async function GET(request: NextRequest) {
       gradeLevel: 'gradeLevel',
     };
     const sortColumn = allowedSortColumns[sortBy] || 'createdAt';
+    const orderBy = { [sortColumn]: sortOrder.toLowerCase() };
 
     // ------------------------------------------------------------------------
     // Step 5: Execute query to fetch filtered reading materials
     // ------------------------------------------------------------------------
-    const whereClause = conditions.join(' AND ');
-    const materialsSql = `
-      SELECT
-        id,
-        teacherId,
-        title,
-        description,
-        type,
-        content,
-        wordCount,
-        difficulty,
-        gradeLevel,
-        status,
-        createdAt,
-        updatedAt
-      FROM reading_materials
-      WHERE ${whereClause}
-      ORDER BY ${sortColumn} ${sortOrder}
-    `;
-
-    const materials = db.prepare(materialsSql).all(...queryParams);
+    const materials = await db.readingMaterial.findMany({
+      where: whereClause,
+      orderBy: orderBy
+    });
 
     // ------------------------------------------------------------------------
     // Step 6: Compute aggregate KPI counts for the teacher's dashboard metrics
     // ------------------------------------------------------------------------
-    const countRow = db
-      .prepare(`
-        SELECT
-          COUNT(*) AS totalAll,
-          SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) AS totalActive,
-          SUM(CASE WHEN status = 'Archived' THEN 1 ELSE 0 END) AS totalArchived
-        FROM reading_materials
-        WHERE teacherId = ?
-      `)
-      .get(teacher.id) as any;
+    const countsRows = await db.readingMaterial.groupBy({
+      by: ['status'],
+      where: { teacherId: teacher.id },
+      _count: { _all: true }
+    });
 
-    const counts = {
-      all: countRow?.totalAll || 0,
-      active: countRow?.totalActive || 0,
-      archived: countRow?.totalArchived || 0,
-    };
+    const counts = { all: 0, active: 0, archived: 0 };
+    for (const row of countsRows) {
+      const lower = row.status.toLowerCase();
+      if (lower === 'active') counts.active = row._count._all;
+      else if (lower === 'archived') counts.archived = row._count._all;
+      counts.all += row._count._all;
+    }
 
     return NextResponse.json({
       success: true,
@@ -275,45 +235,21 @@ export async function POST(request: NextRequest) {
     }
 
     // ------------------------------------------------------------------------
-    // Step 5: Insert the reading passage record into SQLite
+    // Step 5: Insert the reading passage record into PostgreSQL
     // ------------------------------------------------------------------------
-    const materialId = uuidv4();
-    const nowIso = new Date().toISOString();
-
-    const insertStmt = db.prepare(`
-      INSERT INTO reading_materials (
-        id,
-        teacherId,
-        title,
-        description,
-        type,
-        content,
-        wordCount,
-        difficulty,
-        gradeLevel,
-        status,
-        createdAt,
-        updatedAt
-      ) VALUES (?, ?, ?, ?, 'Passage', ?, ?, ?, ?, 'Active', ?, ?)
-    `);
-
-    insertStmt.run(
-      materialId,
-      teacher.id,
-      title,
-      description || null,
-      rawContent,
-      wordCount,
-      validatedDifficulty,
-      validatedGradeLevel,
-      nowIso,
-      nowIso
-    );
-
-    // Retrieve the freshly created material record.
-    const createdMaterial = db
-      .prepare('SELECT * FROM reading_materials WHERE id = ?')
-      .get(materialId);
+    const createdMaterial = await db.readingMaterial.create({
+      data: {
+        teacherId: teacher.id,
+        title: title,
+        description: description || null,
+        type: 'Passage',
+        content: rawContent,
+        wordCount: wordCount,
+        difficulty: validatedDifficulty,
+        gradeLevel: validatedGradeLevel,
+        status: 'Active'
+      }
+    });
 
     return NextResponse.json(
       {
