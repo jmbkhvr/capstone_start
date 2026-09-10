@@ -12,7 +12,7 @@ import { sendPasswordResetEmail } from '@/lib/email';
 // Handles POST requests from the Forgot Password page (/forgot-password).
 // It validates the submitted email, checks if a registered teacher exists,
 // generates a secure random 64-character token with a 1-hour expiration time,
-// saves the reset request to the 'password_resets' database table, and
+// saves the reset request to the 'passwordReset' database table, and
 // dispatches/logs the reset link.
 //
 // Why it is needed:
@@ -44,9 +44,10 @@ export async function POST(request: Request) {
     const cleanEmail = email.trim().toLowerCase();
 
     // Query teacher database for matching account.
-    const teacher = db
-      .prepare('SELECT id, fullName, email FROM teachers WHERE email = ?')
-      .get(cleanEmail) as { id: string; fullName: string; email: string } | undefined;
+    const teacher = await db.teacher.findUnique({
+      where: { email: cleanEmail },
+      select: { id: true, fullName: true, email: true }
+    });
 
     // Generic security message returned to user.
     const genericSuccessResponse = NextResponse.json({
@@ -68,13 +69,17 @@ export async function POST(request: Request) {
     // Generate new UUID for password reset record.
     const resetId = uuidv4();
 
-    // Insert reset request into password_resets table.
-    const insertStatement = db.prepare(`
-      INSERT INTO password_resets (id, teacherId, email, token, expiresAt, used)
-      VALUES (?, ?, ?, ?, ?, 0)
-    `);
-
-    insertStatement.run(resetId, teacher.id, cleanEmail, resetToken, expiresAt);
+    // Insert reset request into passwordReset table.
+    await db.passwordReset.create({
+      data: {
+        id: resetId,
+        teacherId: teacher.id,
+        email: cleanEmail,
+        token: resetToken,
+        expiresAt: expiresAt,
+        used: 0
+      }
+    });
 
     // Build reset URL pointing to /reset-password page.
     const url = new URL(request.url);

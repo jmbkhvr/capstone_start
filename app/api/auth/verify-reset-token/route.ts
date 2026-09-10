@@ -25,16 +25,17 @@ export async function GET(request: Request) {
       );
     }
 
-    // Query password_resets table by token.
-    const resetRecord = db
-      .prepare('SELECT id, teacherId, email, expiresAt, used FROM password_resets WHERE token = ?')
-      .get(token.trim()) as {
-      id: string;
-      teacherId: string;
-      email: string;
-      expiresAt: string;
-      used: number;
-    } | undefined;
+    // Query passwordReset table by token.
+    const resetRecord = await db.passwordReset.findUnique({
+      where: { token: token.trim() },
+      select: {
+        id: true,
+        teacherId: true,
+        email: true,
+        expiresAt: true,
+        used: true,
+      }
+    });
 
     // Check if token exists in database.
     if (!resetRecord) {

@@ -12,8 +12,7 @@
     "contract:emit": "prisma contract emit"
   },
   "dependencies": {
-    "@prisma/client": "^7.10.0",
-    "@prisma/orm-postgres": "^8.0.0-rc.9",
+    "@prisma/client": "^5.22.0",
     "axios": "^1.20.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^13.0.3",
@@ -40,7 +39,7 @@
     "@types/uuid": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
-    "prisma": "^8.0.0-rc.10",
+    "prisma": "^5.22.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

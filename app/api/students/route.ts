@@ -47,160 +47,115 @@ export async function GET(request: NextRequest) {
     const statusFilter = (searchParams.get('status') || 'All').trim();
     const searchQuery = (searchParams.get('search') || '').trim();
 
-    // ------------------------------------------------------------------------
-    // Step 3: Verify the students table exists in the database
-    // ------------------------------------------------------------------------
-    const tableExists = db
-      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='students'")
-      .get();
 
-    if (!tableExists) {
-      return NextResponse.json({
-        success: true,
-        students: [],
-        counts: { all: 0, active: 0, inactive: 0 },
-        classrooms: [],
-        parents: [],
-      });
-    }
 
     // ------------------------------------------------------------------------
     // Step 4: Fetch teacher's active classrooms (for filter and add dropdowns)
     // ------------------------------------------------------------------------
-    const teacherClassrooms = db
-      .prepare(
-        `SELECT id, name, section, gradeLevel, schoolYear 
-         FROM classrooms 
-         WHERE teacherId = ? AND status = 'Active' 
-         ORDER BY name ASC`
-      )
-      .all(teacher.id) as Array<any>;
+    const teacherClassrooms = await db.classroom.findMany({
+      where: { teacherId: teacher.id, status: 'Active' },
+      select: { id: true, name: true, section: true, gradeLevel: true, schoolYear: true },
+      orderBy: { name: 'asc' }
+    });
 
     // ------------------------------------------------------------------------
     // Step 5: Fetch approved parents accessible to this teacher
     // ------------------------------------------------------------------------
-    const hasParentsTable = Boolean(
-      db
-        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='parents'")
-        .get()
-    );
-
-    let teacherParents: any[] = [];
-    if (hasParentsTable) {
-      teacherParents = db
-        .prepare(
-          `SELECT id, fullName, email, childName, childSection 
-           FROM parents 
-           WHERE (teacherId = ? OR teacherId IS NULL) AND status = 'Approved' 
-           ORDER BY fullName ASC`
-        )
-        .all(teacher.id) as Array<any>;
-    }
+    const teacherParents = await db.parent.findMany({
+      where: {
+        OR: [{ teacherId: teacher.id }, { teacherId: null }],
+        status: 'Approved'
+      },
+      select: { id: true, fullName: true, email: true, childName: true, childSection: true },
+      orderBy: { fullName: 'asc' }
+    });
 
     // ------------------------------------------------------------------------
     // Step 6: Compute aggregate status counts for this authenticated teacher
     // ------------------------------------------------------------------------
-    // Status counts are calculated scoped by classroom if a classroom filter is active
-    let countQuery = `
-      SELECT status, COUNT(*) as count 
-      FROM students 
-      WHERE teacherId = ?
-    `;
-    const countParams: any[] = [teacher.id];
-
+    const countWhereClause: any = { teacherId: teacher.id };
     if (classroomFilter !== 'All') {
-      countQuery += ` AND classroomId = ?`;
-      countParams.push(classroomFilter);
+      countWhereClause.classroomId = classroomFilter;
     }
-    countQuery += ` GROUP BY status`;
-
-    const countRows = db.prepare(countQuery).all(...countParams) as Array<{
-      status: string;
-      count: number;
-    }>;
-
-    const counts = {
-      all: 0,
-      active: 0,
-      inactive: 0,
-    };
-
-    countRows.forEach((row) => {
-      const lower = row.status.toLowerCase();
-      if (lower === 'active') {
-        counts.active = row.count;
-      } else if (lower === 'inactive') {
-        counts.inactive = row.count;
-      }
-      counts.all += row.count;
+    const countRows = await db.student.groupBy({
+      by: ['status'],
+      where: countWhereClause,
+      _count: { _all: true }
     });
 
-    // ------------------------------------------------------------------------
-    // Step 7: Construct parameterized SQL query for students with joins
-    // ------------------------------------------------------------------------
-    let query = `
-      SELECT 
-        s.id,
-        s.firstName,
-        s.middleName,
-        s.lastName,
-        s.fullName,
-        s.gradeLevel,
-        s.classroomId,
-        s.teacherId,
-        s.parentId,
-        s.status,
-        s.createdAt,
-        s.updatedAt,
-        c.name as classroomName,
-        c.section as classroomSection,
-        c.schoolYear as classroomSchoolYear,
-        p.fullName as parentName,
-        p.email as parentEmail,
-        p.contactNumber as parentContact
-      FROM students s
-      LEFT JOIN classrooms c ON s.classroomId = c.id
-      LEFT JOIN parents p ON s.parentId = p.id
-      WHERE s.teacherId = ?
-    `;
+    const counts = { all: 0, active: 0, inactive: 0 };
+    for (const row of countRows) {
+      const lower = row.status.toLowerCase();
+      if (lower === 'active') counts.active = row._count._all;
+      else if (lower === 'inactive') counts.inactive = row._count._all;
+      counts.all += row._count._all;
+    }
 
-    const queryParams: any[] = [teacher.id];
+    // ------------------------------------------------------------------------
+    // Step 7: Construct parameterized Prisma query for students with joins
+    // ------------------------------------------------------------------------
+    const whereClause: any = { teacherId: teacher.id };
 
-    // Filter by specific classroom
     if (classroomFilter !== 'All') {
-      query += ` AND s.classroomId = ?`;
-      queryParams.push(classroomFilter);
+      whereClause.classroomId = classroomFilter;
     }
 
-    // Filter by lifecycle status ('Active' | 'Inactive')
     if (statusFilter !== 'All') {
-      query += ` AND s.status = ?`;
-      queryParams.push(statusFilter);
+      whereClause.status = statusFilter;
     }
 
-    // Apply keyword search filter (matches student name or parent name)
     if (searchQuery.length > 0) {
-      query += ` AND (
-        s.fullName LIKE ? OR 
-        s.firstName LIKE ? OR 
-        s.lastName LIKE ? OR 
-        p.fullName LIKE ?
-      )`;
-      const wild = `%${searchQuery}%`;
-      queryParams.push(wild, wild, wild, wild);
+      whereClause.AND = [
+        {
+          OR: [
+            { fullName: { contains: searchQuery, mode: 'insensitive' } },
+            { firstName: { contains: searchQuery, mode: 'insensitive' } },
+            { lastName: { contains: searchQuery, mode: 'insensitive' } },
+            {
+              parent: {
+                fullName: { contains: searchQuery, mode: 'insensitive' }
+              }
+            }
+          ]
+        }
+      ];
     }
 
-    // Order by student full name alphabetically
-    query += ` ORDER BY s.lastName ASC, s.firstName ASC`;
+    const students = await db.student.findMany({
+      where: whereClause,
+      include: {
+        classroom: {
+          select: { name: true, section: true, schoolYear: true }
+        },
+        parent: {
+          select: { fullName: true, email: true, contactNumber: true }
+        }
+      },
+      orderBy: [
+        { lastName: 'asc' },
+        { firstName: 'asc' }
+      ]
+    });
 
-    const students = db.prepare(query).all(...queryParams) as Array<any>;
+    const formattedStudents = students.map((s) => {
+      const { classroom, parent, ...rest } = s;
+      return {
+        ...rest,
+        classroomName: classroom?.name || null,
+        classroomSection: classroom?.section || null,
+        classroomSchoolYear: classroom?.schoolYear || null,
+        parentName: parent?.fullName || null,
+        parentEmail: parent?.email || null,
+        parentContact: parent?.contactNumber || null,
+      };
+    });
 
     // ------------------------------------------------------------------------
     // Step 8: Return formatted response payload
     // ------------------------------------------------------------------------
     return NextResponse.json({
       success: true,
-      students,
+      students: formattedStudents,
       counts,
       classrooms: teacherClassrooms,
       parents: teacherParents,
@@ -283,9 +238,10 @@ export async function POST(request: NextRequest) {
     // ------------------------------------------------------------------------
     // Step 4: Verify the selected classroom belongs to the authenticated teacher
     // ------------------------------------------------------------------------
-    const classroom = db
-      .prepare('SELECT id, name, status, gradeLevel FROM classrooms WHERE id = ? AND teacherId = ?')
-      .get(classroomId, teacher.id) as { id: string; name: string; status: string; gradeLevel: string } | undefined;
+    const classroom = await db.classroom.findUnique({
+      where: { id: classroomId, teacherId: teacher.id },
+      select: { id: true, name: true, status: true, gradeLevel: true }
+    });
 
     if (!classroom) {
       return NextResponse.json(
@@ -325,12 +281,13 @@ export async function POST(request: NextRequest) {
     // ------------------------------------------------------------------------
     let validParentId: string | null = null;
     if (parentId && typeof parentId === 'string' && parentId.trim().length > 0) {
-      const parent = db
-        .prepare(
-          `SELECT id FROM parents 
-           WHERE id = ? AND (teacherId = ? OR teacherId IS NULL)`
-        )
-        .get(parentId.trim(), teacher.id);
+      const parent = await db.parent.findFirst({
+        where: {
+          id: parentId.trim(),
+          OR: [{ teacherId: teacher.id }, { teacherId: null }]
+        },
+        select: { id: true }
+      });
 
       if (!parent) {
         return NextResponse.json(
@@ -344,12 +301,16 @@ export async function POST(request: NextRequest) {
     // ------------------------------------------------------------------------
     // Step 6: Prevent duplicate active student in the same classroom
     // ------------------------------------------------------------------------
-    const duplicateStudent = db
-      .prepare(
-        `SELECT id FROM students 
-         WHERE teacherId = ? AND classroomId = ? AND LOWER(firstName) = LOWER(?) AND LOWER(lastName) = LOWER(?) AND status = 'Active'`
-      )
-      .get(teacher.id, classroomId, cleanFirst, cleanLast);
+    const duplicateStudent = await db.student.findFirst({
+      where: {
+        teacherId: teacher.id,
+        classroomId: classroomId,
+        firstName: { equals: cleanFirst, mode: 'insensitive' },
+        lastName: { equals: cleanLast, mode: 'insensitive' },
+        status: 'Active'
+      },
+      select: { id: true }
+    });
 
     if (duplicateStudent) {
       return NextResponse.json(
@@ -360,56 +321,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ------------------------------------------------------------------------
-    // Step 7: Insert the student record into SQLite
-    // ------------------------------------------------------------------------
-    const studentId = uuidv4();
-    const now = new Date().toISOString();
+    const newStudent = await db.student.create({
+      data: {
+        firstName: cleanFirst,
+        middleName: cleanMiddle || null,
+        lastName: cleanLast,
+        fullName: cleanFullName,
+        gradeLevel: cleanGrade,
+        classroomId: classroomId,
+        teacherId: teacher.id,
+        parentId: validParentId,
+        status: 'Active'
+      },
+      include: {
+        classroom: { select: { name: true } },
+        parent: { select: { fullName: true } }
+      }
+    });
 
-    db.prepare(
-      `INSERT INTO students (
-        id,
-        firstName,
-        middleName,
-        lastName,
-        fullName,
-        gradeLevel,
-        classroomId,
-        teacherId,
-        parentId,
-        status,
-        createdAt,
-        updatedAt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', ?, ?)`
-    ).run(
-      studentId,
-      cleanFirst,
-      cleanMiddle || null,
-      cleanLast,
-      cleanFullName,
-      cleanGrade,
-      classroomId,
-      teacher.id,
-      validParentId,
-      now,
-      now
-    );
-
-    // ------------------------------------------------------------------------
-    // Step 8: Fetch created student record with joined classroom and parent info
-    // ------------------------------------------------------------------------
-    const newStudent = db
-      .prepare(
-        `SELECT 
-          s.*,
-          c.name as classroomName,
-          p.fullName as parentName
-         FROM students s
-         LEFT JOIN classrooms c ON s.classroomId = c.id
-         LEFT JOIN parents p ON s.parentId = p.id
-         WHERE s.id = ?`
-      )
-      .get(studentId) as any;
+    const formattedNewStudent = {
+      ...newStudent,
+      classroomName: newStudent.classroom?.name || null,
+      parentName: newStudent.parent?.fullName || null
+    };
 
     // ------------------------------------------------------------------------
     // Step 9: Return success response with HTTP 201 Created
@@ -418,7 +352,7 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         message: 'Student profile created successfully.',
-        student: newStudent,
+        student: formattedNewStudent,
       },
       { status: 201 }
     );

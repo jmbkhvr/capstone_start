@@ -47,15 +47,16 @@ export async function PATCH(
     // ------------------------------------------------------------------------
     // Step 2: Verify that the parent record exists in the database
     // ------------------------------------------------------------------------
-    const parent = db
-      .prepare('SELECT id, fullName, email, status, teacherId FROM parents WHERE id = ?')
-      .get(id) as {
-      id: string;
-      fullName: string;
-      email: string;
-      status: string;
-      teacherId: string | null;
-    } | undefined;
+    const parent = await db.parent.findUnique({
+      where: { id: id },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        status: true,
+        teacherId: true,
+      }
+    });
 
     if (!parent) {
       return NextResponse.json(
@@ -77,15 +78,14 @@ export async function PATCH(
     // ------------------------------------------------------------------------
     // Step 4: Update status to 'Approved' and associate with the approving teacher
     // ------------------------------------------------------------------------
-    db.prepare(`
-      UPDATE parents 
-      SET 
-        status = 'Approved',
-        teacherId = ?,
-        rejectionReason = NULL,
-        updatedAt = datetime('now')
-      WHERE id = ?
-    `).run(teacher.id, id);
+    await db.parent.update({
+      where: { id: id },
+      data: {
+        status: 'Approved',
+        teacherId: teacher.id,
+        rejectionReason: null,
+      }
+    });
 
     // ------------------------------------------------------------------------
     // Step 5: Return successful approval response

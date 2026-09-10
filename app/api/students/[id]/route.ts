@@ -51,33 +51,31 @@ export async function GET(
     // ------------------------------------------------------------------------
     // Step 2: Query student record owned by this teacher with joined details
     // ------------------------------------------------------------------------
-    const student = db
-      .prepare(
-        `SELECT 
-          s.id,
-          s.firstName,
-          s.middleName,
-          s.lastName,
-          s.fullName,
-          s.gradeLevel,
-          s.classroomId,
-          s.teacherId,
-          s.parentId,
-          s.status,
-          s.createdAt,
-          s.updatedAt,
-          c.name as classroomName,
-          c.section as classroomSection,
-          c.schoolYear as classroomSchoolYear,
-          p.fullName as parentName,
-          p.email as parentEmail,
-          p.contactNumber as parentContact
-        FROM students s
-        LEFT JOIN classrooms c ON s.classroomId = c.id
-        LEFT JOIN parents p ON s.parentId = p.id
-        WHERE s.id = ? AND s.teacherId = ?`
-      )
-      .get(id, teacher.id) as any;
+    const student = await db.student.findUnique({
+      where: { id: id, teacherId: teacher.id },
+      include: {
+        classroom: {
+          select: { name: true, section: true, schoolYear: true }
+        },
+        parent: {
+          select: { fullName: true, email: true, contactNumber: true }
+        }
+      }
+    });
+
+    let formattedStudent = null;
+    if (student) {
+      const { classroom, parent, ...rest } = student;
+      formattedStudent = {
+        ...rest,
+        classroomName: classroom?.name || null,
+        classroomSection: classroom?.section || null,
+        classroomSchoolYear: classroom?.schoolYear || null,
+        parentName: parent?.fullName || null,
+        parentEmail: parent?.email || null,
+        parentContact: parent?.contactNumber || null,
+      };
+    }
 
     if (!student) {
       return NextResponse.json(
@@ -89,7 +87,7 @@ export async function GET(
     // ------------------------------------------------------------------------
     // Step 3: Return student response
     // ------------------------------------------------------------------------
-    return NextResponse.json({ success: true, student });
+    return NextResponse.json({ success: true, student: formattedStudent });
   } catch (error) {
     // ------------------------------------------------------------------------
     // Error Handling: Log server error and return safe HTTP 500 error
@@ -135,9 +133,10 @@ export async function PUT(
     // ------------------------------------------------------------------------
     // Step 2: Verify student exists and belongs to the authenticated teacher
     // ------------------------------------------------------------------------
-    const existingStudent = db
-      .prepare('SELECT id, classroomId, gradeLevel FROM students WHERE id = ? AND teacherId = ?')
-      .get(id, teacher.id) as { id: string; classroomId: string; gradeLevel: string } | undefined;
+    const existingStudent = await db.student.findUnique({
+      where: { id: id, teacherId: teacher.id },
+      select: { id: true, classroomId: true, gradeLevel: true }
+    });
 
     if (!existingStudent) {
       return NextResponse.json(
@@ -188,9 +187,10 @@ export async function PUT(
     // ------------------------------------------------------------------------
     // Step 4: Verify classroom belongs to the authenticated teacher
     // ------------------------------------------------------------------------
-    const classroom = db
-      .prepare('SELECT id, name FROM classrooms WHERE id = ? AND teacherId = ?')
-      .get(targetClassroomId, teacher.id);
+    const classroom = await db.classroom.findUnique({
+      where: { id: targetClassroomId, teacherId: teacher.id },
+      select: { id: true, name: true }
+    });
 
     if (!classroom) {
       return NextResponse.json(
@@ -204,12 +204,13 @@ export async function PUT(
     // ------------------------------------------------------------------------
     let validParentId: string | null = null;
     if (parentId && typeof parentId === 'string' && parentId.trim().length > 0) {
-      const parent = db
-        .prepare(
-          `SELECT id FROM parents 
-           WHERE id = ? AND (teacherId = ? OR teacherId IS NULL)`
-        )
-        .get(parentId.trim(), teacher.id);
+      const parent = await db.parent.findFirst({
+        where: {
+          id: parentId.trim(),
+          OR: [{ teacherId: teacher.id }, { teacherId: null }]
+        },
+        select: { id: true }
+      });
 
       if (!parent) {
         return NextResponse.json(
@@ -239,12 +240,17 @@ export async function PUT(
     // ------------------------------------------------------------------------
     // Step 6: Check for duplicate student name conflict in the same classroom
     // ------------------------------------------------------------------------
-    const duplicateConflict = db
-      .prepare(
-        `SELECT id FROM students 
-         WHERE teacherId = ? AND classroomId = ? AND LOWER(firstName) = LOWER(?) AND LOWER(lastName) = LOWER(?) AND id != ? AND status = 'Active'`
-      )
-      .get(teacher.id, targetClassroomId, cleanFirst, cleanLast, id);
+    const duplicateConflict = await db.student.findFirst({
+      where: {
+        teacherId: teacher.id,
+        classroomId: targetClassroomId,
+        firstName: { equals: cleanFirst, mode: 'insensitive' },
+        lastName: { equals: cleanLast, mode: 'insensitive' },
+        id: { not: id },
+        status: 'Active'
+      },
+      select: { id: true }
+    });
 
     if (duplicateConflict) {
       return NextResponse.json(
@@ -256,50 +262,30 @@ export async function PUT(
     }
 
     // ------------------------------------------------------------------------
-    // Step 7: Update student record in SQLite
+    // Step 7: Update student record in PostgreSQL
     // ------------------------------------------------------------------------
-    const now = new Date().toISOString();
+    const updatedStudent = await db.student.update({
+      where: { id: id, teacherId: teacher.id },
+      data: {
+        firstName: cleanFirst,
+        middleName: cleanMiddle || null,
+        lastName: cleanLast,
+        fullName: cleanFullName,
+        gradeLevel: cleanGrade,
+        classroomId: targetClassroomId,
+        parentId: validParentId,
+      },
+      include: {
+        classroom: { select: { name: true } },
+        parent: { select: { fullName: true } }
+      }
+    });
 
-    db.prepare(
-      `UPDATE students 
-       SET 
-         firstName = ?, 
-         middleName = ?, 
-         lastName = ?, 
-         fullName = ?, 
-         gradeLevel = ?, 
-         classroomId = ?, 
-         parentId = ?, 
-         updatedAt = ?
-       WHERE id = ? AND teacherId = ?`
-    ).run(
-      cleanFirst,
-      cleanMiddle || null,
-      cleanLast,
-      cleanFullName,
-      cleanGrade,
-      targetClassroomId,
-      validParentId,
-      now,
-      id,
-      teacher.id
-    );
-
-    // ------------------------------------------------------------------------
-    // Step 8: Fetch updated record
-    // ------------------------------------------------------------------------
-    const updatedStudent = db
-      .prepare(
-        `SELECT 
-          s.*,
-          c.name as classroomName,
-          p.fullName as parentName
-         FROM students s
-         LEFT JOIN classrooms c ON s.classroomId = c.id
-         LEFT JOIN parents p ON s.parentId = p.id
-         WHERE s.id = ?`
-      )
-      .get(id) as any;
+    const formattedUpdatedStudent = {
+      ...updatedStudent,
+      classroomName: updatedStudent.classroom?.name || null,
+      parentName: updatedStudent.parent?.fullName || null
+    };
 
     // ------------------------------------------------------------------------
     // Step 9: Return success response
@@ -307,7 +293,7 @@ export async function PUT(
     return NextResponse.json({
       success: true,
       message: 'Student information updated successfully.',
-      student: updatedStudent,
+      student: formattedUpdatedStudent,
     });
   } catch (error) {
     // ------------------------------------------------------------------------

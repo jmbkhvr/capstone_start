@@ -51,9 +51,9 @@ export async function POST(request: Request) {
     const cleanEmail = email.trim().toLowerCase();
 
     // Check if Teacher ID is already registered in database.
-    const existingTeacherId = db
-      .prepare('SELECT id FROM teachers WHERE teacherId = ?')
-      .get(cleanTeacherId);
+    const existingTeacherId = await db.teacher.findUnique({
+      where: { teacherId: cleanTeacherId }
+    });
 
     if (existingTeacherId) {
       return NextResponse.json(
@@ -66,9 +66,9 @@ export async function POST(request: Request) {
     }
 
     // Check if Email address is already registered in database.
-    const existingEmail = db
-      .prepare('SELECT id FROM teachers WHERE email = ?')
-      .get(cleanEmail);
+    const existingEmail = await db.teacher.findUnique({
+      where: { email: cleanEmail }
+    });
 
     if (existingEmail) {
       return NextResponse.json(
@@ -86,13 +86,16 @@ export async function POST(request: Request) {
     // Generate unique UUID string primary key.
     const newId = uuidv4();
 
-    // Insert new teacher record into SQLite database.
-    const insertStatement = db.prepare(`
-      INSERT INTO teachers (id, teacherId, fullName, email, passwordHash)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-
-    insertStatement.run(newId, cleanTeacherId, cleanFullName, cleanEmail, passwordHash);
+    // Insert new teacher record into PostgreSQL database.
+    await db.teacher.create({
+      data: {
+        id: newId,
+        teacherId: cleanTeacherId,
+        fullName: cleanFullName,
+        email: cleanEmail,
+        passwordHash,
+      }
+    });
 
     // Create session payload for JWT token.
     const teacherPayload = {

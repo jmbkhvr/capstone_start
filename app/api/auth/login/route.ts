@@ -39,15 +39,16 @@ export async function POST(request: Request) {
     const cleanEmail = email.trim().toLowerCase();
 
     // Query teacher record from database by email address.
-    const teacher = db
-      .prepare('SELECT id, teacherId, fullName, email, passwordHash FROM teachers WHERE email = ?')
-      .get(cleanEmail) as {
-      id: string;
-      teacherId: string;
-      fullName: string;
-      email: string;
-      passwordHash: string;
-    } | undefined;
+    const teacher = await db.teacher.findUnique({
+      where: { email: cleanEmail },
+      select: {
+        id: true,
+        teacherId: true,
+        fullName: true,
+        email: true,
+        passwordHash: true,
+      }
+    });
 
     // If teacher record is not found in database, return safe unauthorized error.
     if (!teacher) {

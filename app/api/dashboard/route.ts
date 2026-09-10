@@ -38,14 +38,15 @@ export async function GET() {
     // Step 2: Verify the teacher account exists and is active in the database
     // ------------------------------------------------------------------------
     // Query the teachers table by unique ID to fetch current profile details.
-    const teacherRecord = db
-      .prepare('SELECT id, teacherId, fullName, email FROM teachers WHERE id = ?')
-      .get(sessionTeacher.id) as {
-      id: string;
-      teacherId: string;
-      fullName: string;
-      email: string;
-    } | undefined;
+    const teacherRecord = await db.teacher.findUnique({
+      where: { id: sessionTeacher.id },
+      select: {
+        id: true,
+        teacherId: true,
+        fullName: true,
+        email: true,
+      }
+    });
 
     if (!teacherRecord) {
       return NextResponse.json(
@@ -55,67 +56,23 @@ export async function GET() {
     }
 
     // ------------------------------------------------------------------------
-    // Step 3: Check database schema for future module tables
-    // ------------------------------------------------------------------------
-    // Helper function that checks whether a specific table currently exists
-    // in the SQLite master schema table, preventing runtime query crashes.
-    const tableExists = (tableName: string): boolean => {
-      const result = db
-        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?")
-        .get(tableName);
-      return Boolean(result);
-    };
-
-    // ------------------------------------------------------------------------
     // Step 4: Compute summary counts scoped strictly to this teacher
     // ------------------------------------------------------------------------
-    let totalStudents = 0;
-    let totalClasses = 0;
-    let totalAssessments = 0;
-    let studentsNeedingAttention = 0;
+    const totalClasses = await db.classroom.count({
+      where: { teacherId: teacherRecord.id }
+    });
 
-    // Check if classrooms table exists from future Module 3
-    if (tableExists('classrooms')) {
-      const classCountResult = db
-        .prepare('SELECT COUNT(*) as count FROM classrooms WHERE teacherId = ?')
-        .get(teacherRecord.id) as { count: number };
-      totalClasses = classCountResult?.count || 0;
-    }
+    const totalStudents = await db.student.count({
+      where: { teacherId: teacherRecord.id }
+    });
 
-    // Check if students table exists from future Module 4
-    if (tableExists('students')) {
-      const studentCountResult = db
-        .prepare('SELECT COUNT(*) as count FROM students WHERE teacherId = ?')
-        .get(teacherRecord.id) as { count: number };
-      totalStudents = studentCountResult?.count || 0;
-
-      // Calculate students flagged for intervention (e.g. Phil-IRI frustration level)
-      if (tableExists('student_assessments')) {
-        const attentionResult = db
-          .prepare(
-            `SELECT COUNT(DISTINCT studentId) as count 
-             FROM student_assessments 
-             WHERE teacherId = ? AND status = 'Needs Attention'`
-          )
-          .get(teacherRecord.id) as { count: number };
-        studentsNeedingAttention = attentionResult?.count || 0;
-      }
-    }
-
-    // Check if assessments table exists from future Module 5
-    if (tableExists('assessments')) {
-      const assessmentCountResult = db
-        .prepare('SELECT COUNT(*) as count FROM assessments WHERE teacherId = ?')
-        .get(teacherRecord.id) as { count: number };
-      totalAssessments = assessmentCountResult?.count || 0;
-    }
+    // Future modules aren't in Prisma schema yet, default to empty states.
+    const totalAssessments = 0;
+    const studentsNeedingAttention = 0;
 
     // ------------------------------------------------------------------------
     // Step 5: Query recent assessment records for this teacher
     // ------------------------------------------------------------------------
-    // In accordance with Section 7: If the assessment functionality has not yet
-    // been populated by pupils, provide an empty array so the frontend displays
-    // the clean empty state without using fabricated or fake data.
     interface RecentAssessmentRow {
       id: string;
       studentName: string;
@@ -125,47 +82,18 @@ export async function GET() {
       status: 'Completed' | 'In Progress' | 'Pending' | 'Needs Review';
     }
 
-    let recentAssessments: RecentAssessmentRow[] = [];
-
-    if (tableExists('student_assessments')) {
-      const rows = db
-        .prepare(
-          `SELECT id, studentName, assessmentName, date, score, status 
-           FROM student_assessments 
-           WHERE teacherId = ? 
-           ORDER BY date DESC 
-           LIMIT 5`
-        )
-        .all(teacherRecord.id) as RecentAssessmentRow[];
-      recentAssessments = rows || [];
-    }
+    let recentAssessments: RecentAssessmentRow[] = []; // Empty state for future module
 
     // ------------------------------------------------------------------------
     // Step 6: Query student performance overview metrics
     // ------------------------------------------------------------------------
-    // In accordance with Section 8: Prepares performance categories (Reading
-    // Accuracy, Pronunciation, Fluency, and Overall Performance).
-    // If real data has not been logged yet, category scores remain at 0 or empty
-    // so the frontend can display an honest empty state.
     interface PerformanceMetric {
       category: string;
       score: number;
       benchmark: number;
     }
 
-    let performanceOverview: PerformanceMetric[] = [];
-
-    if (tableExists('performance_metrics')) {
-      const metrics = db
-        .prepare(
-          `SELECT category, AVG(score) as score, benchmark 
-           FROM performance_metrics 
-           WHERE teacherId = ? 
-           GROUP BY category`
-        )
-        .all(teacherRecord.id) as PerformanceMetric[];
-      performanceOverview = metrics || [];
-    }
+    let performanceOverview: PerformanceMetric[] = []; // Empty state for future module
 
     // ------------------------------------------------------------------------
     // Step 7: Return consolidated dashboard payload

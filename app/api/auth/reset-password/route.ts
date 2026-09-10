@@ -40,15 +40,16 @@ export async function POST(request: Request) {
     const cleanToken = token.trim();
 
     // Retrieve matching reset token record from database.
-    const resetRecord = db
-      .prepare('SELECT id, teacherId, email, expiresAt, used FROM password_resets WHERE token = ?')
-      .get(cleanToken) as {
-      id: string;
-      teacherId: string;
-      email: string;
-      expiresAt: string;
-      used: number;
-    } | undefined;
+    const resetRecord = await db.passwordReset.findUnique({
+      where: { token: cleanToken },
+      select: {
+        id: true,
+        teacherId: true,
+        email: true,
+        expiresAt: true,
+        used: true,
+      }
+    });
 
     // Reject if token is not found in database.
     if (!resetRecord) {
@@ -88,22 +89,16 @@ export async function POST(request: Request) {
     const newPasswordHash = await hashPassword(password);
 
     // Update teacher's password hash in teachers table.
-    const updateTeacher = db.prepare(`
-      UPDATE teachers
-      SET passwordHash = ?, updatedAt = datetime('now')
-      WHERE id = ?
-    `);
-
-    updateTeacher.run(newPasswordHash, resetRecord.teacherId);
+    await db.teacher.update({
+      where: { id: resetRecord.teacherId },
+      data: { passwordHash: newPasswordHash, updatedAt: new Date().toISOString() }
+    });
 
     // Mark password reset token as used (consumed).
-    const updateToken = db.prepare(`
-      UPDATE password_resets
-      SET used = 1
-      WHERE id = ?
-    `);
-
-    updateToken.run(resetRecord.id);
+    await db.passwordReset.update({
+      where: { id: resetRecord.id },
+      data: { used: 1 }
+    });
 
     return NextResponse.json({
       success: true,

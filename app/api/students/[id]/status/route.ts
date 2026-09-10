@@ -47,9 +47,10 @@ export async function PATCH(
     // ------------------------------------------------------------------------
     // Step 2: Verify student exists and belongs to this teacher
     // ------------------------------------------------------------------------
-    const student = db
-      .prepare('SELECT id, fullName, status FROM students WHERE id = ? AND teacherId = ?')
-      .get(id, teacher.id) as { id: string; fullName: string; status: string } | undefined;
+    const student = await db.student.findUnique({
+      where: { id: id, teacherId: teacher.id },
+      select: { id: true, fullName: true, status: true }
+    });
 
     if (!student) {
       return NextResponse.json(
@@ -85,29 +86,20 @@ export async function PATCH(
     // ------------------------------------------------------------------------
     // Step 4: Update status in database
     // ------------------------------------------------------------------------
-    const now = new Date().toISOString();
+    const updatedStudent = await db.student.update({
+      where: { id: id, teacherId: teacher.id },
+      data: { status: targetStatus },
+      include: {
+        classroom: { select: { name: true } },
+        parent: { select: { fullName: true } }
+      }
+    });
 
-    db.prepare(
-      `UPDATE students 
-       SET status = ?, updatedAt = ? 
-       WHERE id = ? AND teacherId = ?`
-    ).run(targetStatus, now, id, teacher.id);
-
-    // ------------------------------------------------------------------------
-    // Step 5: Fetch updated student record
-    // ------------------------------------------------------------------------
-    const updatedStudent = db
-      .prepare(
-        `SELECT 
-          s.*,
-          c.name as classroomName,
-          p.fullName as parentName
-         FROM students s
-         LEFT JOIN classrooms c ON s.classroomId = c.id
-         LEFT JOIN parents p ON s.parentId = p.id
-         WHERE s.id = ?`
-      )
-      .get(id) as any;
+    const formattedUpdatedStudent = {
+      ...updatedStudent,
+      classroomName: updatedStudent.classroom?.name || null,
+      parentName: updatedStudent.parent?.fullName || null
+    };
 
     const message =
       targetStatus === 'Inactive'
@@ -120,7 +112,7 @@ export async function PATCH(
     return NextResponse.json({
       success: true,
       message,
-      student: updatedStudent,
+      student: formattedUpdatedStudent,
     });
   } catch (error) {
     // ------------------------------------------------------------------------
