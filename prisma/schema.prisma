@@ -16,9 +16,12 @@ generator client {
 
 // Datasource block specifies SQLite as the database engine and points to a local file.
 // Storing data in SQLite ensures the app runs locally without external database setup.
+// prisma/schema.prisma
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider  = "postgresql"
+  url  	    = env("DATABASE_URL")
+  // uncomment next line if you use Prisma <5.10
+  // directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
 // ============================================================================
