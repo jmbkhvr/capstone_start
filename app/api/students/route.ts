@@ -3,13 +3,14 @@ import type { NextRequest } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { getAuthenticatedTeacher } from '@/lib/auth';
 import db from '@/lib/db';
+import { SUPPORTED_GRADE_LEVELS } from '@/lib/constants';
 
 // ============================================================================
 // STUDENT MANAGEMENT LIST & CREATE API ENDPOINT (MODULE 5)
 // ============================================================================
 // What this endpoint does:
-// 1. GET: Retrieves the Grade 3 student profiles belonging exclusively to the
-//    authenticated teacher. Supports classroom filtering, status filtering
+// 1. GET: Retrieves the student profiles across elementary grades (Grade 1 to 6)
+//    belonging exclusively to the authenticated teacher. Supports classroom filtering, status filtering
 //    ('All', 'Active', 'Inactive'), and search queries (by student name or parent name).
 //    Also returns the teacher's active classrooms and approved parents for dropdowns.
 // 2. POST: Validates student fields (first name, last name, classroom, optional parent),
@@ -250,7 +251,7 @@ export async function POST(request: NextRequest) {
       firstName,
       middleName = '',
       lastName,
-      gradeLevel = 'Grade 3',
+      gradeLevel,
       classroomId,
       parentId = null,
     } = body;
@@ -279,20 +280,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const cleanFirst = firstName.trim();
-    const cleanMiddle = (middleName || '').trim();
-    const cleanLast = lastName.trim();
-    const cleanGrade = (gradeLevel || 'Grade 3').trim();
-    const cleanFullName = cleanMiddle
-      ? `${cleanFirst} ${cleanMiddle} ${cleanLast}`
-      : `${cleanFirst} ${cleanLast}`;
-
     // ------------------------------------------------------------------------
     // Step 4: Verify the selected classroom belongs to the authenticated teacher
     // ------------------------------------------------------------------------
     const classroom = db
-      .prepare('SELECT id, name, status FROM classrooms WHERE id = ? AND teacherId = ?')
-      .get(classroomId, teacher.id) as { id: string; name: string; status: string } | undefined;
+      .prepare('SELECT id, name, status, gradeLevel FROM classrooms WHERE id = ? AND teacherId = ?')
+      .get(classroomId, teacher.id) as { id: string; name: string; status: string; gradeLevel: string } | undefined;
 
     if (!classroom) {
       return NextResponse.json(
@@ -300,6 +293,25 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
+
+    // Validate Grade Level:
+    // If explicitly provided, must be in SUPPORTED_GRADE_LEVELS.
+    // If omitted, dynamically inherit from the selected classroom's grade level.
+    const candidateGrade = (gradeLevel || classroom.gradeLevel || '').trim();
+    if (!candidateGrade || !SUPPORTED_GRADE_LEVELS.includes(candidateGrade as any)) {
+      return NextResponse.json(
+        { error: `Grade Level is required and must be one of: ${SUPPORTED_GRADE_LEVELS.join(', ')}.` },
+        { status: 400 }
+      );
+    }
+
+    const cleanFirst = firstName.trim();
+    const cleanMiddle = (middleName || '').trim();
+    const cleanLast = lastName.trim();
+    const cleanGrade = candidateGrade;
+    const cleanFullName = cleanMiddle
+      ? `${cleanFirst} ${cleanMiddle} ${cleanLast}`
+      : `${cleanFirst} ${cleanLast}`;
 
     if (classroom.status === 'Archived') {
       return NextResponse.json(

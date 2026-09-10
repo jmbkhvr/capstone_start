@@ -253,7 +253,7 @@ export default function DashboardPage() {
                 className={`text-xs font-semibold ${isChild ? 'text-teal-700' : 'text-slate-400'
                   }`}
               >
-                Grade 3 Oral Reading Assessment Platform
+                Oral Reading Assessment Platform
               </p>
             </div>
 
@@ -372,7 +372,7 @@ export default function DashboardPage() {
                   className={`text-xs sm:text-sm mt-2 max-w-2xl leading-relaxed ${isChild ? 'text-slate-700 font-medium' : 'text-slate-300'
                     }`}
                 >
-                  Here is an overview of your Grade 3 pupils, active classrooms, and
+                  Here is an overview of your enrolled pupils, active classrooms, and
                   recent reading assessment progress.
                 </p>
               </div>
@@ -405,7 +405,7 @@ export default function DashboardPage() {
               <SummaryCard
                 title="Total Students"
                 value={data.summary.totalStudents}
-                subtitle="Enrolled pupils in your Grade 3 classes"
+                subtitle="Enrolled pupils in your active classes"
                 emptyHint="No pupils have been enrolled yet. Add students in Student Management."
                 icon={Users}
                 iconBgClass={isChild ? 'bg-sky-100' : 'bg-sky-500/10'}
@@ -417,7 +417,7 @@ export default function DashboardPage() {
               <SummaryCard
                 title="Total Classes"
                 value={data.summary.totalClasses}
-                subtitle="Grade 3 sections created & managed"
+                subtitle="Classroom sections created & managed"
                 emptyHint="No classrooms created yet. Set up sections in Classroom Management."
                 icon={School}
                 iconBgClass={isChild ? 'bg-amber-100' : 'bg-amber-500/10'}

@@ -121,7 +121,7 @@ export default function RegisterPage() {
             {isChild ? 'Join the Reading Quest! 🚀' : 'Create Educator Account'}
           </h1>
           <p className={`text-sm mt-1.5 ${isChild ? 'text-teal-800 font-medium' : 'text-slate-400'}`}>
-            Grade 3 Reading Proficiency Assessment System
+            Reading Proficiency Assessment System
           </p>
         </div>
 

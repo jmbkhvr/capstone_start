@@ -64,7 +64,7 @@ function getDatabase(): Database.Database {
     );
 
     -- PARENT ACCOUNTS TABLE (MODULE 3)
-    -- Stores parent registration requests, contact info, linked Grade 3 pupil,
+    -- Stores parent registration requests, contact info, linked pupil profile (any supported grade),
     -- account status ('Pending', 'Approved', 'Rejected'), and teacher ownership.
     CREATE TABLE IF NOT EXISTS parents (
       id TEXT PRIMARY KEY,
@@ -73,7 +73,7 @@ function getDatabase(): Database.Database {
       contactNumber TEXT,
       passwordHash TEXT NOT NULL,
       childName TEXT NOT NULL,
-      childGradeLevel TEXT DEFAULT 'Grade 3',
+      childGradeLevel TEXT,
       childSection TEXT,
       teacherId TEXT,
       status TEXT DEFAULT 'Pending',
@@ -84,12 +84,12 @@ function getDatabase(): Database.Database {
     );
 
     -- CLASSROOMS TABLE (MODULE 4: CLASSROOM MANAGEMENT)
-    -- Stores teacher-managed classroom sections for Grade 3 pupils.
+    -- Stores teacher-managed classroom sections across multiple grade levels (Grade 1 to 6).
     -- Each classroom belongs to a specific teacher and has a status ('Active' or 'Archived').
     CREATE TABLE IF NOT EXISTS classrooms (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
-      gradeLevel TEXT NOT NULL DEFAULT 'Grade 3',
+      gradeLevel TEXT NOT NULL,
       section TEXT,
       schoolYear TEXT NOT NULL,
       description TEXT,
@@ -101,7 +101,7 @@ function getDatabase(): Database.Database {
     );
 
     -- STUDENTS TABLE (MODULE 5: STUDENT MANAGEMENT)
-    -- Stores Grade 3 pupil profiles managed by teachers.
+    -- Stores pupil profiles across multiple elementary grade levels (Grade 1 to 6) managed by teachers.
     -- Each student is assigned to a classroom, owned by an authorized teacher,
     -- and can be optionally associated with an approved parent account.
     -- Uses soft-deactivation (status = 'Inactive') to preserve assessment history.
@@ -111,7 +111,7 @@ function getDatabase(): Database.Database {
       middleName TEXT,
       lastName TEXT NOT NULL,
       fullName TEXT NOT NULL,
-      gradeLevel TEXT NOT NULL DEFAULT 'Grade 3',
+      gradeLevel TEXT NOT NULL,
       classroomId TEXT NOT NULL,
       teacherId TEXT NOT NULL,
       parentId TEXT,
@@ -125,7 +125,7 @@ function getDatabase(): Database.Database {
 
     -- READING MATERIALS TABLE (MODULE 6: READING MATERIALS)
     -- Stores teacher-created reading passages used as reference texts for oral
-    -- reading assessments. Supports multiple grade levels (Grade 1 through Grade 6).
+    -- reading assessments across multiple grade levels (Grade 1 through Grade 6).
     -- Each reading material belongs to an authorized teacher (multi-tenant isolation).
     -- Soft archiving (status = 'Archived') is enforced to safeguard future assessment metrics.
     -- The 'type' column is retained for backward compatibility but always set to 'Passage'.
@@ -138,7 +138,7 @@ function getDatabase(): Database.Database {
       content TEXT NOT NULL,
       wordCount INTEGER NOT NULL DEFAULT 0,
       difficulty TEXT NOT NULL DEFAULT 'Easy',
-      gradeLevel TEXT NOT NULL DEFAULT 'Grade 3',
+      gradeLevel TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'Active',
       createdAt TEXT DEFAULT (datetime('now')),
       updatedAt TEXT DEFAULT (datetime('now')),

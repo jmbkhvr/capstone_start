@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getAuthenticatedTeacher } from '@/lib/auth';
 import db from '@/lib/db';
+import { SUPPORTED_GRADE_LEVELS } from '@/lib/constants';
 
 // ============================================================================
 // SINGLE STUDENT DETAILS & UPDATE API ENDPOINT (MODULE 5)
@@ -135,8 +136,8 @@ export async function PUT(
     // Step 2: Verify student exists and belongs to the authenticated teacher
     // ------------------------------------------------------------------------
     const existingStudent = db
-      .prepare('SELECT id, classroomId FROM students WHERE id = ? AND teacherId = ?')
-      .get(id, teacher.id) as { id: string; classroomId: string } | undefined;
+      .prepare('SELECT id, classroomId, gradeLevel FROM students WHERE id = ? AND teacherId = ?')
+      .get(id, teacher.id) as { id: string; classroomId: string; gradeLevel: string } | undefined;
 
     if (!existingStudent) {
       return NextResponse.json(
@@ -162,7 +163,7 @@ export async function PUT(
       firstName,
       middleName = '',
       lastName,
-      gradeLevel = 'Grade 3',
+      gradeLevel,
       classroomId,
       parentId = null,
     } = body;
@@ -219,10 +220,18 @@ export async function PUT(
       validParentId = parentId.trim();
     }
 
+    // Validate Grade Level: Ensure it is one of the supported elementary grades
+    const cleanGrade = (gradeLevel || existingStudent.gradeLevel || '').trim();
+    if (!cleanGrade || !SUPPORTED_GRADE_LEVELS.includes(cleanGrade as any)) {
+      return NextResponse.json(
+        { error: `Grade Level is required and must be one of: ${SUPPORTED_GRADE_LEVELS.join(', ')}.` },
+        { status: 400 }
+      );
+    }
+
     const cleanFirst = firstName.trim();
     const cleanMiddle = (middleName || '').trim();
     const cleanLast = lastName.trim();
-    const cleanGrade = (gradeLevel || 'Grade 3').trim();
     const cleanFullName = cleanMiddle
       ? `${cleanFirst} ${cleanMiddle} ${cleanLast}`
       : `${cleanFirst} ${cleanLast}`;
