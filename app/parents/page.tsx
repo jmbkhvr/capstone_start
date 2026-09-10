@@ -485,7 +485,7 @@ export default function ParentManagementPage() {
                 <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
                   {searchQuery
                     ? `No matching records found for query "${searchQuery}". Try searching with a different term.`
-                    : 'Parent registration requests for Grade 3 pupils will appear here when parents sign up.'}
+                    : 'Parent registration requests for enrolled pupils will appear here when parents sign up.'}
                 </p>
               </div>
             ) : (

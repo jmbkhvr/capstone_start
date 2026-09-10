@@ -1106,3 +1106,127 @@ Executed automated test suite (`test_password_reset.mjs`) covering all 8 passwor
 ### Deferred Functionality & Next Steps
 
 * **Module 7: Assessment Module** will implement the oral reading assessment setup, audio recording, automated pronunciation scoring, and Phil-IRI oral reading metric calculations when explicitly instructed.
+
+---
+
+## Update 9 - 8:15 PM September 6, 2026
+
+### Update Information
+
+* **Update Number**: Update 9
+* **Exact Time**: 8:15 PM
+* **Exact Date**: September 6, 2026
+* **What Was Worked On**:
+  Complete system-wide transition making the Reading Assessment System **generic and grade-level agnostic** across all completed modules (Modules 1 through 6), database schemas, backend APIs, frontend UI forms/pages, and automated test suites:
+  - **Previous Requirement**: The system was originally designed specifically for Grade 3 pupils.
+  - **New Requirement**: The system is now generic and supports multiple elementary grade levels (`Grade 1`, `Grade 2`, `Grade 3`, `Grade 4`, `Grade 5`, and `Grade 6`).
+  - **Important Clarification**: **Grade 3 was NOT removed as a valid grade level.** Grade 3 remains fully supported as an option for classrooms, pupils, reading materials, and assessments. The restriction that the entire platform exclusively serves Grade 3 has been permanently removed.
+
+---
+
+### Key Architectural & Code Changes
+
+1. **Centralized Grade Constants (`lib/constants.ts`)**:
+   - Defined `SUPPORTED_GRADE_LEVELS = ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6']` and `isValidGradeLevel()` helper function used across both server and client layers.
+
+2. **Database Layer (`lib/db.ts` & `prisma/schema.prisma`)**:
+   - Removed hardcoded `DEFAULT 'Grade 3'` from `classrooms.gradeLevel`, `students.gradeLevel`, `parents.childGradeLevel`, and `reading_materials.gradeLevel`.
+   - Generalised table and model documentation comments from "Grade 3 pupils" to generic elementary pupils.
+   - All existing database records remain 100% valid and intact.
+
+3. **Backend API Endpoints**:
+   - **`app/api/classrooms/route.ts` & `[id]/route.ts`**: Validates `gradeLevel` against `SUPPORTED_GRADE_LEVELS`. Allows creating/updating classrooms for any elementary grade.
+   - **`app/api/students/route.ts` & `[id]/route.ts`**: Validates `gradeLevel` against `SUPPORTED_GRADE_LEVELS`. If omitted on enrollment, dynamically inherits the assigned classroom's grade level.
+   - **`app/api/parents/[id]/reject/route.ts`**: Generalized default rejection reason from "rejected by Grade 3 teacher" to "rejected by teacher".
+
+4. **Frontend UI Components & Forms**:
+   - **`components/classrooms/create-classroom-modal.tsx` & `edit-classroom-modal.tsx`**: Replaced locked single Grade 3 option with dynamic dropdown mapping across all `SUPPORTED_GRADE_LEVELS`.
+   - **`components/students/add-student-modal.tsx`**: Replaced locked/disabled input with grade level dropdown mapping across `SUPPORTED_GRADE_LEVELS`, with automated sync to the selected classroom's grade level.
+   - **`components/students/edit-student-modal.tsx`**: Replaced locked badge with editable grade level dropdown.
+   - **`components/students/student-details-modal.tsx`**: Replaced hardcoded "Grade 3 Pupil" text with dynamic `{student.gradeLevel || 'Enrolled'} Pupil`.
+   - **`components/parents/status-confirm-modal.tsx`**: Generalized rejection reason placeholder.
+
+5. **Frontend Pages & Branding**:
+   - **`app/students/page.tsx`**: Updated KPI card from "Total Grade 3 Pupils" to "Total Enrolled Pupils" and generalized empty state text.
+   - **`app/classrooms/page.tsx`**: Generalized header description and empty state text.
+   - **`app/dashboard/page.tsx`**: Removed "Grade 3" hardcoding from subtitles ("Enrolled pupils in your active classes", "Classroom sections created & managed").
+   - **`app/login/page.tsx` & `app/register/page.tsx`**: Replaced "Grade 3 Readers" with "Young Readers" and updated subtitle to "Reading Proficiency Assessment System".
+
+6. **Comprehensive Automated Verification (`test_system_wide_generic_grades.mjs`)**:
+   - Created dedicated test suite validating end-to-end creation, enrollment, passage creation, and filtering across all 6 elementary grades (`Grade 1`, `Grade 2`, `Grade 3`, `Grade 4`, `Grade 5`, `Grade 6`). 42/42 assertions passed.
+
+---
+
+### Files Created
+
+1. **`lib/constants.ts`**: Shared `SUPPORTED_GRADE_LEVELS` array, type definitions, and validation helpers.
+2. **`test_system_wide_generic_grades.mjs`**: Comprehensive multi-grade test suite exercising Grades 1 to 6 across classrooms, students, and reading materials.
+
+---
+
+### Files Modified
+
+1. **`lib/db.ts`**: Generalized table comments and removed `DEFAULT 'Grade 3'` constraints.
+2. **`prisma/schema.prisma`**: Generalized `Parent`, `Classroom`, `Student`, and `ReadingMaterial` models.
+3. **`app/api/classrooms/route.ts`**: Added `SUPPORTED_GRADE_LEVELS` validation for classroom creation.
+4. **`app/api/classrooms/[id]/route.ts`**: Added `SUPPORTED_GRADE_LEVELS` validation for classroom updates.
+5. **`app/api/students/route.ts`**: Added multi-grade support and dynamic classroom inheritance for student enrollment.
+6. **`app/api/students/[id]/route.ts`**: Added multi-grade support for student updates.
+7. **`app/api/parents/[id]/reject/route.ts`**: Generalized default rejection note.
+8. **`components/classrooms/create-classroom-modal.tsx`**: Added Grade 1-6 dropdown selector.
+9. **`components/classrooms/edit-classroom-modal.tsx`**: Added Grade 1-6 dropdown selector.
+10. **`components/students/add-student-modal.tsx`**: Added Grade 1-6 dropdown selector with classroom sync.
+11. **`components/students/edit-student-modal.tsx`**: Added Grade 1-6 dropdown selector.
+12. **`components/students/student-details-modal.tsx`**: Dynamic grade display in header badge.
+13. **`components/parents/status-confirm-modal.tsx`**: Generalized placeholder copy.
+14. **`app/students/page.tsx`**: Generalize KPI title and empty state copy.
+15. **`app/classrooms/page.tsx`**: Generalize header and empty state copy.
+16. **`app/dashboard/page.tsx`**: Generalize card subtitles.
+17. **`app/login/page.tsx`**: Generalize header badge and portal title.
+18. **`app/register/page.tsx`**: Generalize portal title.
+19. **`test_student_management_module.mjs`**: Updated assertion descriptions for dynamic grade inheritance.
+20. **`DEVELOPMENT_LOG.md`**: Recorded Update 9.
+
+---
+
+### Verification and Testing Results
+
+* **Dedicated Multi-Grade Test Suite (`test_system_wide_generic_grades.mjs`)**:
+  - Tested Grade 1 classroom, student, passage, and filter: **PASS**
+  - Tested Grade 2 classroom, student, passage, and filter: **PASS**
+  - Tested Grade 3 classroom, student, passage, and filter: **PASS**
+  - Tested Grade 4 classroom, student, passage, and filter: **PASS**
+  - Tested Grade 5 classroom, student, passage, and filter: **PASS**
+  - Tested Grade 6 classroom, student, passage, and filter: **PASS**
+  - Total Multi-Grade Test Result: **42/42 tests passed (100%)**.
+* **Existing Module Regression Tests**:
+  - `test_student_management_module.mjs`: **37/37 passed (100%)**.
+  - `test_classroom_management_module.mjs`: **50/50 passed (100%)**.
+  - `test_parent_management_module.mjs`: **31/31 passed (100%)**.
+  - `test_reading_materials_module.mjs`: **47/47 passed (100%)**.
+  - Total Passing Tests: **207/207 passed across all suites (100%)**.
+* **Production Build (`npm run build`)**:
+  - Successfully compiled via Next.js Turbopack in 3.5s with **0 errors**.
+
+---
+
+### Current Status
+
+* **Module 1 (Authentication Module)**: **100% Complete & Operational (Generic)**.
+* **Module 2 (Teacher Dashboard Module)**: **100% Complete & Operational (Generic)**.
+* **Module 3 (Parent Management Module)**: **100% Complete & Operational (Generic)**.
+* **Module 4 (Classroom Management Module)**: **100% Complete & Operational (Generic Grades 1–6)**.
+* **Module 5 (Student Management Module)**: **100% Complete & Operational (Generic Grades 1–6)**.
+* **Module 6 (Reading Materials Module)**: **100% Complete & Operational (Generic Grades 1–6, Passages-Only)**.
+* Application builds cleanly (`npm run build`) and runs locally at `http://localhost:3000`.
+
+---
+
+### Mandatory Requirement for Future Modules (Modules 7–12)
+
+> **IMPORTANT SYSTEM REQUIREMENT:**
+> This system is generic and is NOT limited to Grade 3.
+> The system must support multiple grade levels (Grade 1 through Grade 6).
+> Do not hard-code Grade 3 as the default or only supported grade level.
+> Grade 3 may exist as one valid grade level, but it must be treated as dynamic data rather than a system-wide restriction.
+

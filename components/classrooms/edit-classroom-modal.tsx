@@ -12,6 +12,7 @@ import {
   Save,
 } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
+import { SUPPORTED_GRADE_LEVELS } from '@/lib/constants';
 import type { ClassroomRecord } from './create-classroom-modal';
 
 // ============================================================================
@@ -256,9 +257,12 @@ export function EditClassroomModal({
                       : 'bg-slate-800/80 border-slate-700 focus:ring-blue-500 text-slate-100'
                   }`}
                 >
-                  <option value="Grade 3">Grade 3 (Target Level)</option>
-                  <option value="Grade 2">Grade 2</option>
-                  <option value="Grade 4">Grade 4</option>
+                  {/* Render all supported elementary grade levels (Grade 1 to 6) */}
+                  {SUPPORTED_GRADE_LEVELS.map((g) => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
                 </select>
                 <Layers className="w-4 h-4 absolute right-3 top-3 pointer-events-none text-slate-400" />
               </div>

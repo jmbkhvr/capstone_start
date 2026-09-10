@@ -409,7 +409,7 @@ export default function StudentManagementPage() {
                     className={`text-xs font-semibold uppercase tracking-wider ${isChild ? 'text-slate-500' : 'text-slate-400'
                       }`}
                   >
-                    Total Grade 3 Pupils
+                    Total Enrolled Pupils
                   </p>
                   <p
                     className={`text-2xl font-black mt-1 ${isChild ? 'text-slate-900' : 'text-white'
@@ -646,7 +646,7 @@ export default function StudentManagementPage() {
                 <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
                   {searchQuery || selectedClassroom !== 'all' || statusFilter !== 'All'
                     ? 'No pupils match your selected filter criteria. Try clearing the search query or selecting "All Classrooms".'
-                    : 'Get started by enrolling Grade 3 pupils to your classrooms for automated reading assessment.'}
+                    : 'Get started by enrolling pupils to your classrooms for automated reading assessment.'}
                 </p>
                 <div className="pt-2 flex items-center justify-center gap-2">
                   {searchQuery || selectedClassroom !== 'all' || statusFilter !== 'All' ? (
@@ -730,7 +730,7 @@ export default function StudentManagementPage() {
                                 }`}
                             >
                               <Layers className="w-3 h-3 text-blue-400" />
-                              <span>{student.gradeLevel || 'Grade 3'}</span>
+                              <span>{student.gradeLevel || 'N/A'}</span>
                             </span>
                           </td>
 

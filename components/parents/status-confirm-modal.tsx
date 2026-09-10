@@ -137,7 +137,7 @@ export function StatusConfirmModal({
               <textarea
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="e.g. Student name does not match current Grade 3 class enrollment roster..."
+                placeholder="e.g. Student name does not match current class enrollment roster..."
                 rows={3}
                 className={`w-full text-xs p-3 rounded-xl border focus:outline-none focus:ring-2 ${
                   isChild

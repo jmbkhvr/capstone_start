@@ -218,7 +218,7 @@ async function runTests() {
     const createData = await createRes.json();
     assert(createData.success === true, 'Response JSON indicates success: true');
     assert(createData.student?.fullName === `Juan Santos ${uniqueLastName}`, 'Student fullName properly constructed');
-    assert(createData.student?.gradeLevel === 'Grade 3', 'Pupil gradeLevel strictly defaults to Grade 3');
+    assert(createData.student?.gradeLevel === 'Grade 3', 'Pupil gradeLevel dynamically inherited from classroom');
     createdStudentId = createData.student.id;
 
     // ------------------------------------------------------------------------

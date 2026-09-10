@@ -13,6 +13,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
+import { SUPPORTED_GRADE_LEVELS } from '@/lib/constants';
 
 // ============================================================================
 // STUDENT RECORD & OPTION TYPE DEFINITIONS
@@ -101,8 +102,15 @@ export function AddStudentModal({
   useEffect(() => {
     if (defaultClassroomId) {
       setClassroomId(defaultClassroomId);
+      const matched = classrooms.find((c) => c.id === defaultClassroomId);
+      if (matched && (matched as any).gradeLevel) {
+        setGradeLevel((matched as any).gradeLevel);
+      }
     } else if (classrooms.length > 0 && !classroomId) {
       setClassroomId(classrooms[0].id);
+      if ((classrooms[0] as any).gradeLevel) {
+        setGradeLevel((classrooms[0] as any).gradeLevel);
+      }
     }
   }, [defaultClassroomId, classrooms, classroomId]);
 
@@ -232,11 +240,11 @@ export function AddStudentModal({
                 Add Student Profile
               </h2>
               <p
-                className={`text-xs ${
-                  isChild ? 'text-teal-800/70' : 'text-slate-400'
+                className={`text-xs mt-0.5 ${
+                  isChild ? 'text-teal-800/80' : 'text-slate-400'
                 }`}
               >
-                Register a Grade 3 pupil and assign to an active classroom
+                Register a pupil and assign to an active classroom
               </p>
             </div>
           </div>
@@ -349,28 +357,34 @@ export function AddStudentModal({
               />
             </div>
 
-            {/* Grade Level (DepEd Target Grade 3) */}
+            {/* Grade Level Selector (Supports Grade 1 through Grade 6) */}
             <div>
               <label
-                htmlFor="student-grade-input"
+                htmlFor="student-grade-select"
                 className={`block text-xs font-semibold uppercase tracking-wider mb-1.5 ${
                   isChild ? 'text-slate-700' : 'text-slate-300'
                 }`}
               >
-                Grade Level
+                Grade Level <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <input
-                  id="student-grade-input"
-                  type="text"
-                  readOnly
-                  value="Grade 3 (Capstone Scope)"
-                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm cursor-not-allowed ${
+                <select
+                  id="student-grade-select"
+                  value={gradeLevel}
+                  onChange={(e) => setGradeLevel(e.target.value)}
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 appearance-none ${
                     isChild
-                      ? 'bg-slate-100 text-slate-600 border-slate-200'
-                      : 'bg-slate-800/40 text-slate-400 border-slate-700'
+                      ? 'bg-teal-50/30 border-teal-200 focus:ring-teal-400 text-slate-800'
+                      : 'bg-slate-800/80 border-slate-700 focus:ring-sky-500 text-slate-100'
                   }`}
-                />
+                >
+                  {/* Dynamically list all supported elementary grades */}
+                  {SUPPORTED_GRADE_LEVELS.map((g) => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+                </select>
                 <Layers className="w-4 h-4 absolute right-3 top-3 pointer-events-none text-slate-400" />
               </div>
             </div>

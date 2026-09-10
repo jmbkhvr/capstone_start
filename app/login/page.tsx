@@ -79,7 +79,7 @@ function LoginFormContent() {
         <div className="flex items-center gap-2">
           {isChild ? (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-xs font-bold">
-              <Smile className="w-4 h-4 text-teal-600" /> Grade 3 Readers
+              <Smile className="w-4 h-4 text-teal-600" /> Young Readers
             </span>
           ) : (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-700/60 text-slate-300 rounded-full text-xs font-medium">
@@ -111,7 +111,7 @@ function LoginFormContent() {
         <p className={`text-sm mt-1.5 ${isChild ? 'text-teal-800 font-medium' : 'text-slate-400'}`}>
           {isChild
             ? 'Sign in to start reading & assessment adventures!'
-            : 'Grade 3 Reading Proficiency Assessment System'}
+            : 'Reading Proficiency Assessment System'}
         </p>
       </div>
 
