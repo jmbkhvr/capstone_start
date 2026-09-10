@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getAuthenticatedTeacher } from '@/lib/auth';
 import db from '@/lib/db';
+import { SUPPORTED_GRADE_LEVELS } from '@/lib/constants';
 
 // ============================================================================
 // SINGLE CLASSROOM DETAILS & UPDATE API ENDPOINT (MODULE 4)
@@ -198,8 +199,18 @@ export async function PUT(
       );
     }
 
+    // Validate Grade Level: Ensure it matches an allowed elementary grade (Grade 1-6)
+    const cleanGradeLevel = (gradeLevel || '').trim();
+    if (!cleanGradeLevel || !SUPPORTED_GRADE_LEVELS.includes(cleanGradeLevel as any)) {
+      return NextResponse.json(
+        {
+          error: `Grade Level is required and must be one of: ${SUPPORTED_GRADE_LEVELS.join(', ')}.`,
+        },
+        { status: 400 }
+      );
+    }
+
     const cleanName = name.trim();
-    const cleanGradeLevel = (gradeLevel || 'Grade 3').trim();
     const cleanSection = (section || '').trim();
     const cleanSchoolYear = schoolYear.trim();
     const cleanDescription = (description || '').trim();

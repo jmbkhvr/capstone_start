@@ -114,7 +114,7 @@ model PasswordReset {
 // PARENT ACCOUNT MODEL (MODULE 3)
 // ============================================================================
 // What this model does:
-// Represents parent user registration requests and accounts for Grade 3 pupils.
+// Represents parent user registration requests and accounts for pupils across elementary grade levels.
 // Teachers review, approve, or reject these accounts.
 //
 // Security Note:
@@ -137,11 +137,11 @@ model Parent {
   // Cryptographically hashed password.
   passwordHash    String
 
-  // Name of the Grade 3 child/pupil.
+  // Name of the child/pupil.
   childName       String
 
-  // Grade level of child (defaults to 'Grade 3').
-  childGradeLevel String   @default("Grade 3")
+  // Grade level of child (e.g., 'Grade 1' through 'Grade 6').
+  childGradeLevel String?
 
   // Classroom section (e.g. 'Diamond', 'Mabini').
   childSection    String?
@@ -172,8 +172,9 @@ model Parent {
 // CLASSROOM MODEL (MODULE 4: CLASSROOM MANAGEMENT)
 // ============================================================================
 // What this model does:
-// Represents an academic classroom section created and managed by a teacher.
-// Stores information including classroom name, grade level (Grade 3), section,
+// Represents an academic classroom section created and managed by a teacher across
+// elementary grade levels (Grade 1 through Grade 6).
+// Stores information including classroom name, grade level, section,
 // school year, optional description, status ('Active' | 'Archived'), and ownership.
 //
 // Archiving Note:
@@ -187,8 +188,8 @@ model Classroom {
   // Descriptive name of the classroom (e.g. "Grade 3 - Section Diamond").
   name        String
 
-  // Grade level of the classroom (defaults to "Grade 3").
-  gradeLevel  String   @default("Grade 3")
+  // Grade level of the classroom (e.g., "Grade 1" through "Grade 6").
+  gradeLevel  String
 
   // Classroom section label (e.g. "Diamond", "Mabini").
   section     String?
@@ -222,13 +223,13 @@ model Classroom {
 // STUDENT MODEL (MODULE 5: STUDENT MANAGEMENT)
 // ============================================================================
 // What this model does:
-// Represents a Grade 3 pupil profile managed by a teacher.
+// Represents a pupil profile across elementary grade levels (Grade 1 to 6) managed by a teacher.
 // Stores pupil's name (first, middle, last, and full name), grade level,
 // assigned classroom ID, teacher ID, optional linked parent ID, status, and timestamps.
 //
 // Soft Deactivation Note:
 // Uses soft deactivation (status = 'Inactive') instead of permanent deletion to
-// safeguard historical oral pronunciation evaluations and Phil-IRI diagnostic metrics.
+// safeguard historical oral pronunciation evaluations and reading diagnostic metrics.
 // ============================================================================
 model Student {
   // Unique internal database ID generated as a UUID string.
@@ -246,8 +247,8 @@ model Student {
   // Full composite name for fast queries and table sorting.
   fullName    String
 
-  // Grade level of pupil (defaults to target Grade 3).
-  gradeLevel  String    @default("Grade 3")
+  // Grade level of pupil (e.g. Grade 1 through Grade 6).
+  gradeLevel  String
 
   // Foreign key pointing to the classroom section the pupil is enrolled in.
   classroomId String
@@ -314,7 +315,7 @@ model ReadingMaterial {
   difficulty  String   @default("Easy")
 
   // Target educational grade level (e.g. 'Grade 1', 'Grade 2', ... 'Grade 6').
-  gradeLevel  String   @default("Grade 3")
+  gradeLevel  String
 
   // Lifecycle status: 'Active' (available for assessments) or 'Archived'.
   status      String   @default("Active")

@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { getAuthenticatedTeacher } from '@/lib/auth';
 import db from '@/lib/db';
+import { SUPPORTED_GRADE_LEVELS } from '@/lib/constants';
 
 // ============================================================================
 // CLASSROOM MANAGEMENT LIST & CREATE API ENDPOINT (MODULE 4)
@@ -216,7 +217,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, gradeLevel = 'Grade 3', section = '', schoolYear, description = '' } = body;
+    const { name, gradeLevel, section = '', schoolYear, description = '' } = body;
 
     // ------------------------------------------------------------------------
     // Step 3: Validate required fields
@@ -236,6 +237,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate Grade Level: Ensure it matches an allowed elementary grade (Grade 1-6)
+    // Grade 3 is valid, but the system is generic and accepts any supported elementary level.
+    const cleanGradeLevel = (gradeLevel || '').trim();
+    if (!cleanGradeLevel || !SUPPORTED_GRADE_LEVELS.includes(cleanGradeLevel as any)) {
+      return NextResponse.json(
+        {
+          error: `Grade Level is required and must be one of: ${SUPPORTED_GRADE_LEVELS.join(', ')}.`,
+        },
+        { status: 400 }
+      );
+    }
+
     // Validate School Year (e.g., '2026-2027')
     if (!schoolYear || typeof schoolYear !== 'string' || schoolYear.trim().length < 4) {
       return NextResponse.json(
@@ -245,7 +258,6 @@ export async function POST(request: NextRequest) {
     }
 
     const cleanName = name.trim();
-    const cleanGradeLevel = (gradeLevel || 'Grade 3').trim();
     const cleanSection = (section || '').trim();
     const cleanSchoolYear = schoolYear.trim();
     const cleanDescription = (description || '').trim();

@@ -43,10 +43,8 @@ export async function PATCH(
       );
     }
 
-    // ------------------------------------------------------------------------
-    // Step 2: Parse optional rejection reason from the request body
-    // ------------------------------------------------------------------------
-    let reason = 'Registration rejected by Grade 3 teacher.';
+    // Default rejection note when teacher leaves note blank
+    let reason = 'Registration rejected by teacher.';
     try {
       const body = await request.json();
       if (body.reason && typeof body.reason === 'string' && body.reason.trim().length > 0) {

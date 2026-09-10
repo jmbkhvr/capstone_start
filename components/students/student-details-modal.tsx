@@ -122,7 +122,7 @@ export default function StudentDetailsModal({
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                Grade 3 Pupil • Enrolled Record
+                {student.gradeLevel || 'Enrolled'} Pupil • Enrolled Record
               </p>
             </div>
           </div>

@@ -376,7 +376,7 @@ export default function ClassroomManagementPage() {
                     isChild ? 'text-amber-800/70' : 'text-slate-400'
                   }`}
                 >
-                  Manage Grade 3 sections, review assigned pupils, and organize school years
+                  Manage classroom sections, review assigned pupils, and organize school years
                 </p>
               </div>
 
@@ -512,7 +512,7 @@ export default function ClassroomManagementPage() {
               >
                 {searchQuery
                   ? `No classrooms matching "${searchQuery}" in ${activeTab.toLowerCase()} classes.`
-                  : 'Create your first classroom to get started with Grade 3 reading assessments.'}
+                  : 'Create your first classroom to get started with reading assessments.'}
               </p>
               <button
                 type="button"
